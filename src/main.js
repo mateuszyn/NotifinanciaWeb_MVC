@@ -1,4 +1,4 @@
-import '../style.css'
+import './assets/style.css'
 
 document.querySelector('#app').innerHTML = `
   <div>
