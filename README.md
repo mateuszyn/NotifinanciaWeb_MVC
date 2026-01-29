@@ -14,7 +14,7 @@ Para configurar o ambiente de desenvolvimento local do Notifinancia, siga os pas
 
 **3. Instalação de Dependências**
 
-- Instale todos os pacotes necessários (Vite, Supabase SDK, etc) executando:
+- Instale todos os pacotes necessários (Vite, Supabase SDK, etc) executando NA PASTA DO PROJETO:
 
 _npm install_
 
