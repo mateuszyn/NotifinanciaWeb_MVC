@@ -88,24 +88,15 @@ export const AssetService = {
 
 
 
-    async updateAsset(asset) {
+    async updateAsset(id, data) {
+    const { error } = await supabase
+        .from('assets')
+        .update({
+            quantity: data.quantity,
+            average_price: data.averagePrice
+        })
+        .eq('id', id); // Filtro pelo ID que pegamos do botão
 
-        const oldAsset = supabase.from('assets').select('*').eq('id', asset.id).single();
-
-        if (oldAsset != null) {
-            const { error } = await supabase
-                .from('assets')
-                .update({
-                    quantity: asset.quantity,
-                    average_price: asset.averagePrice
-                })
-                .eq('ticker', asset.ticker);
-            if (error) throw error;
-        }
-        else {
-            throw new Error("O Asset informado não existe.");
-
-        }
-
-    }
+    if (error) throw error;
+}
 };

@@ -63,3 +63,70 @@ body {
   width: 100%;
   margin-top: 10px;
 }
+
+/* Fundo escurecido */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  /* Escondido por padrão */
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Caixa do Modal */
+.custom-modal {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.3s ease;
+}
+
+/* Classe para mostrar o modal */
+.modal-overlay.active {
+  display: flex;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Força as cores dentro do modal customizado */
+.custom-modal h3 {
+  color: #1a1a1a !important;
+  /* Quase preto */
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+}
+
+.custom-modal label {
+  color: #444 !important;
+  /* Cinza escuro */
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.custom-modal .form-control {
+  color: #000 !important;
+  /* Texto que o usuário digita */
+  background-color: #f8f9fa !important;
+  border: 1px solid #ddd;
+}
