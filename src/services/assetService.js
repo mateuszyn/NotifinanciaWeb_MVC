@@ -17,6 +17,28 @@ export const AssetService = {
         });
     },
 
+
+    async validateTicker(ticker) {
+        if (!ticker) return false;
+
+        const url = `https://brapi.dev/api/quote/${ticker}?token=${BRAPI_TOKEN}`;
+
+        try {
+            const response = await fetch(url);
+
+            // Se a API retornar 404 ou outro erro, o ticker é inválido
+            if (!response.ok) return false;
+
+            const data = await response.json();
+
+            // A Brapi retorna um array 'results'. Se estiver vazio ou o primeiro item for nulo, não existe.
+            return data.results && data.results.length > 0 && data.results[0].symbol;
+        } catch (error) {
+            console.error('Erro ao validar ticker na Brapi:', error);
+            return false;
+        }
+    },
+
     // 2. Busca os preços atuais na Bolsa (Brapi)
     async getMarketPrices(tickers) {
         if (tickers.length === 0) return {};
@@ -52,7 +74,7 @@ export const AssetService = {
         if (error) throw error;
     },
 
-    async deleteAsset(id) { 
+    async deleteAsset(id) {
         const { error } = await supabase
             .from('assets')
             .delete()

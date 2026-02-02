@@ -37,20 +37,50 @@ export const AssetController = {
 
         const form = document.querySelector('#form-asset');
         form?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const newAsset = {
-                ticker: document.querySelector('#ticker').value.toUpperCase(),
-                quantity: Number(document.querySelector('#quantity').value),
-                averagePrice: parseFloat(document.querySelector('#averagePrice').value)
-            };
+    e.preventDefault();
+    
+    const tickerInput = document.querySelector('#ticker');
+    const tickerValue = tickerInput.value.toUpperCase().trim();
+    
+    // Mostra um feedback visual de "carregando" se quiser
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerText;
+    submitBtn.innerText = "Validando...";
+    submitBtn.disabled = true;
 
-            try {
-                await AssetService.addAsset(newAsset);
-                this.init();
-            } catch (error) {
-                console.error('Erro ao salvar:', error.message);
-            }
-        });
+    try {
+        // 1. Valida o Ticker na API antes de qualquer coisa
+        const isValid = await AssetService.validateTicker(tickerValue);
+
+        if (!isValid) {
+            alert(`O ticker "${tickerValue}" não foi encontrado na Bolsa.`);
+            submitBtn.innerText = originalText;
+            submitBtn.disabled = false;
+            return; // Interrompe a execução aqui
+        }
+
+        // 2. Se for válido, prepara o objeto
+        const newAsset = {
+            ticker: tickerValue,
+            quantity: Number(document.querySelector('#quantity').value),
+            averagePrice: parseFloat(document.querySelector('#averagePrice').value)
+        };
+
+        // 3. Salva no Supabase
+        await AssetService.addAsset(newAsset);
+        
+        // 4. Limpa o formulário e recarrega a lista
+        form.reset();
+        await this.init(); 
+
+    } catch (error) {
+        console.error('Erro ao salvar:', error.message);
+        alert('Erro ao processar sua solicitação.');
+    } finally {
+        submitBtn.innerText = originalText;
+        submitBtn.disabled = false;
+    }
+});
         // Dentro de setupEventListeners
         const assetsDeleteButtons = document.querySelectorAll('.btn-delete');
         assetsDeleteButtons.forEach(button => {
