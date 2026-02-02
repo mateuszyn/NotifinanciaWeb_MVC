@@ -12,14 +12,13 @@ export const AssetView = {
                 </div>
             </header>
 
-            <div class="container">
+            <div class="container mt-4">
                 <div class="row" id="asset-list">
                     ${assets.map(asset => {
-                        const profit = (asset.currentPrice - asset.averagePrice) * asset.quantity;
                         const profitPct = (((asset.currentPrice / asset.averagePrice) - 1) * 100).toFixed(2);
                         
                         return `
-                        <div class="col-12 col-md-6 col-lg-4">
+                        <div class="col-12 col-md-6 col-lg-4 mb-4">
                             <div class="asset-card">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                     <h4 class="m-0">${asset.ticker}</h4>
@@ -31,7 +30,7 @@ export const AssetView = {
                                         <p class="price-value">Total: R$ ${(asset.quantity * asset.currentPrice).toFixed(2)}</p>
                                     </div>
                                 </div>
-                                <div class="row border-top pt-2">
+                                <div class="row border-top pt-2 mb-3">
                                     <div class="col-6">
                                         <p class="price-label">P. Médio (vs Atual)</p>
                                         <p class="price-value">R$ ${asset.averagePrice.toFixed(2)} (${profitPct}%)</p>
@@ -41,7 +40,12 @@ export const AssetView = {
                                         <p class="price-value">R$ ${asset.currentPrice.toFixed(2)}</p>
                                     </div>
                                 </div>
-                                <button class="btn btn-detail">DETALHES</button>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-detail flex-grow-1">DETALHES</button>
+                                    <button class="btn btn-outline-danger btn-delete" data-id="${asset.id}">
+                                        <i class="bi bi-trash"></i> DELETAR
+                                    </button>
+                                </div>
                             </div>
                         </div>`;
                     }).join('')}
