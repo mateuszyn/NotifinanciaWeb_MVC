@@ -3,27 +3,18 @@ import { AssetView } from '../views/AssetView.js';
 import { AddAssetView } from '../views/AddAssetView.js';
 import { AuthService } from '../services/authService.js';
 
-
 export const AssetController = {
     async init() {
         const user = await AuthService.getUser();
-
-        // 1. Busca os ativos do usuário no Supabase
         const userAssets = await AssetService.getAssets();
-
-        // 2. Extrai apenas os tickers para consultar a Brapi
         const tickers = userAssets.map(a => a.ticker);
-
-        // 3. Busca os preços atuais de mercado
         const marketPrices = await AssetService.getMarketPrices(tickers);
 
-        // 4. Une os dados: adiciona o preço atual a cada objeto de ativo
         const enrichedAssets = userAssets.map(asset => ({
             ...asset,
             currentPrice: marketPrices[asset.ticker] || 0
         }));
 
-        // 5. Renderiza a View com os dados completos
         AssetView.render(enrichedAssets, user);
         AddAssetView.render();
 
@@ -31,48 +22,85 @@ export const AssetController = {
     },
 
     setupEventListeners() {
-        // logout
+        // --- LOGOUT ---
         document.querySelector('#btn-logout')?.addEventListener('click', async () => {
             await AuthService.signOut();
             window.location.reload();
         });
 
-        // criar asset
+        // --- NOVO: BOTÕES DE ATALHO DE QUANTIDADE (+1, +10...) ---
+        document.querySelectorAll('.qty-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const inputQty = document.querySelector('#quantity');
+                const addValue = parseInt(e.currentTarget.dataset.add);
+                const currentValue = parseInt(inputQty.value) || 0;
+                inputQty.value = currentValue + addValue;
+            });
+        });
+
+        // --- NOVO: RECOMENDAÇÃO DE TICKERS (AUTOCOMPLETE) ---
+        const tickerInput = document.querySelector('#ticker');
+        const datalist = document.querySelector('#ticker-suggestions');
+
+        tickerInput?.addEventListener('input', async (e) => {
+            const query = e.target.value.toUpperCase();
+            if (query.length >= 2) {
+                const suggestions = await AssetService.getTickerSuggestions(query);
+                if (datalist) {
+                    datalist.innerHTML = suggestions
+                        .map(t => `<option value="${t}">`)
+                        .join('');
+                }
+            }
+        });
+
+        // --- NOVO: BUSCA DE PREÇO ATUAL AO DIGITAR TICKER ---
+        tickerInput?.addEventListener('blur', async (e) => {
+            const ticker = e.target.value.toUpperCase().trim();
+            if (ticker) {
+                const price = await AssetService.getPrice(ticker);
+                if (price > 0) {
+                    const priceInput = document.querySelector('#averagePrice');
+                    const priceDisplay = document.querySelector('#live-price');
+                    const infoSpan = document.querySelector('#current-price-info');
+
+                    // Preenche o campo automaticamente se estiver vazio
+                    if (!priceInput.value) priceInput.value = price.toFixed(2);
+                    
+                    // Atualiza o pequeno indicador de "Preço Atual" no label
+                    if (priceDisplay) priceDisplay.innerText = price.toFixed(2);
+                    if (infoSpan) infoSpan.style.display = 'inline';
+                }
+            }
+        });
+
+        // --- CRIAR ASSET ---
         const form = document.querySelector('#form-asset');
         form?.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const tickerInput = document.querySelector('#ticker');
-            const tickerValue = tickerInput.value.toUpperCase().trim();
-
-            // Mostra um feedback visual de "carregando" se quiser
+            const tickerValue = document.querySelector('#ticker').value.toUpperCase().trim();
             const submitBtn = form.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerText;
+            
             submitBtn.innerText = "Validando...";
             submitBtn.disabled = true;
 
             try {
-                // 1. Valida o Ticker na API antes de qualquer coisa
                 const isValid = await AssetService.validateTicker(tickerValue);
 
                 if (!isValid) {
-                    alert(`O ticker "${tickerValue}" não foi encontrado na Bolsa.`);
-                    submitBtn.innerText = originalText;
-                    submitBtn.disabled = false;
-                    return; // Interrompe a execução aqui
+                    alert(`O ticker "${tickerValue}" não foi encontrado.`);
+                    return;
                 }
 
-                // 2. Se for válido, prepara o objeto
                 const newAsset = {
                     ticker: tickerValue,
                     quantity: Number(document.querySelector('#quantity').value),
                     averagePrice: parseFloat(document.querySelector('#averagePrice').value)
                 };
 
-                // 3. Salva no Supabase
                 await AssetService.addAsset(newAsset);
-
-                // 4. Limpa o formulário e recarrega a lista
                 form.reset();
                 await this.init();
 
@@ -85,30 +113,24 @@ export const AssetController = {
             }
         });
 
-        // Deletar asset
-        const assetsDeleteButtons = document.querySelectorAll('.btn-delete');
-        assetsDeleteButtons.forEach(button => {
+        // --- DELETAR ASSET ---
+        document.querySelectorAll('.btn-delete').forEach(button => {
             button.addEventListener('click', async (e) => {
-                // e.currentTarget garante que pegamos o botão, não o ícone interno
                 const idDoAtivo = e.currentTarget.dataset.id;
-
                 if (confirm('Deseja realmente excluir este ativo?')) {
                     try {
                         await AssetService.deleteAsset(idDoAtivo);
-
-                        // Feedback visual antes de recarregar (opcional mas bom)
-                        console.log("Deletado com sucesso!");
-
-                        await this.init(); // Recarrega a tela
+                        await this.init();
                     } catch (error) {
                         alert('Erro ao deletar: ' + error.message);
                     }
                 }
             });
         });
+
+        // --- EDIÇÃO (MODAL) ---
         const overlay = document.querySelector('#update-modal-overlay');
 
-        // Abrir Modal
         document.querySelectorAll('.btn-edit').forEach(button => {
             button.addEventListener('click', (e) => {
                 const btn = e.currentTarget;
@@ -116,22 +138,18 @@ export const AssetController = {
                 document.querySelector('#modal-ticker-title').innerText = btn.dataset.ticker;
                 document.querySelector('#update-quantity').value = btn.dataset.qty;
                 document.querySelector('#update-averagePrice').value = btn.dataset.price;
-
-                overlay.classList.add('active'); // Mostra o modal
+                overlay.classList.add('active');
             });
         });
 
-        // Fechar Modal (Botão Cancelar)
         document.querySelector('#btn-close-modal')?.addEventListener('click', () => {
             overlay.classList.remove('active');
         });
 
-        // Fechar Modal (Clicar fora da caixa branca)
         overlay?.addEventListener('click', (e) => {
             if (e.target === overlay) overlay.classList.remove('active');
         });
 
-        // Submit do Update
         document.querySelector('#form-update-asset')?.addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.querySelector('#update-id').value;
