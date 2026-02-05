@@ -8,12 +8,18 @@ export const AssetController = {
         const user = await AuthService.getUser();
         const userAssets = await AssetService.getAssets();
         const tickers = userAssets.map(a => a.ticker);
-        const marketPrices = await AssetService.getMarketPrices(tickers);
+        
+        // Agora recebe um objeto de objetos { ticker: { price, changePercent } }
+        const marketData = await AssetService.getMarketPrices(tickers);
 
-        const enrichedAssets = userAssets.map(asset => ({
-            ...asset,
-            currentPrice: marketPrices[asset.ticker] || 0
-        }));
+        const enrichedAssets = userAssets.map(asset => {
+            const live = marketData[asset.ticker] || { price: 0, changePercent: 0 };
+            return {
+                ...asset,
+                currentPrice: live.price,
+                dailyChange: live.changePercent // Novo dado para a lógica de cores
+            };
+        });
 
         AssetView.render(enrichedAssets, user);
         AddAssetView.render();
@@ -28,7 +34,7 @@ export const AssetController = {
             window.location.reload();
         });
 
-        // --- NOVO: BOTÕES DE ATALHO DE QUANTIDADE (+1, +10...) ---
+        // --- BOTÕES DE ATALHO DE QUANTIDADE ---
         document.querySelectorAll('.qty-btn').forEach(button => {
             button.addEventListener('click', (e) => {
                 const inputQty = document.querySelector('#quantity');
@@ -38,7 +44,7 @@ export const AssetController = {
             });
         });
 
-        // --- NOVO: RECOMENDAÇÃO DE TICKERS (AUTOCOMPLETE) ---
+        // --- RECOMENDAÇÃO DE TICKERS ---
         const tickerInput = document.querySelector('#ticker');
         const datalist = document.querySelector('#ticker-suggestions');
 
@@ -54,21 +60,24 @@ export const AssetController = {
             }
         });
 
-        // --- NOVO: BUSCA DE PREÇO ATUAL AO DIGITAR TICKER ---
+        // --- BUSCA DE PREÇO E VARIAÇÃO AO DIGITAR TICKER ---
         tickerInput?.addEventListener('blur', async (e) => {
             const ticker = e.target.value.toUpperCase().trim();
             if (ticker) {
-                const price = await AssetService.getPrice(ticker);
-                if (price > 0) {
+                const data = await AssetService.getPrice(ticker);
+                if (data.price > 0) {
                     const priceInput = document.querySelector('#averagePrice');
                     const priceDisplay = document.querySelector('#live-price');
                     const infoSpan = document.querySelector('#current-price-info');
 
-                    // Preenche o campo automaticamente se estiver vazio
-                    if (!priceInput.value) priceInput.value = price.toFixed(2);
+                    if (!priceInput.value) priceInput.value = data.price.toFixed(2);
                     
-                    // Atualiza o pequeno indicador de "Preço Atual" no label
-                    if (priceDisplay) priceDisplay.innerText = price.toFixed(2);
+                    if (priceDisplay) {
+                        const sign = data.changePercent >= 0 ? '+' : '';
+                        priceDisplay.innerText = `${data.price.toFixed(2)} (${sign}${data.changePercent.toFixed(2)}%)`;
+                        // Cor indicativa rápida no formulário
+                        priceDisplay.className = data.changePercent >= 0 ? 'text-success' : 'text-danger';
+                    }
                     if (infoSpan) infoSpan.style.display = 'inline';
                 }
             }

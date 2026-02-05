@@ -130,3 +130,47 @@ body {
   background-color: #f8f9fa !important;
   border: 1px solid #ddd;
 }
+
+/* Deixa os labels da barra de adicionar bem visíveis */
+.fixed-bottom label {
+    color: #adb5bd !important; /* Um cinza claro/médio bem elegante */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Ajuste opcional: deixar o placeholder (aquele texto de exemplo dentro do input) mais claro */
+.fixed-bottom input::placeholder {
+    color: #6c757d !important;
+}
+
+/* Cores para os Textos de Porcentagem */
+.text-profit-pos { color: #2ecc71 !important; } /* Verde vivo */
+.text-profit-neg { color: #e74c3c !important; } /* Vermelho vivo */
+
+/* Lógica de Bordas para o asset-card */
+.border-profit-viva-pos { border-left: 6px solid #145a32 !important; }   /* Verde Escuro */
+.border-profit-dia-neg { border-left: 6px solid #2ecc71 !important; }    /* Verde Claro */
+.border-neutral-portfolio { border-left: 6px solid #0d6efd !important; } /* Azul (P.M = 0) */
+.border-loss-dia-pos { border-left: 6px solid #f1948a !important; }     /* Vermelho Claro */
+.border-loss-viva-neg { border-left: 6px solid #922b21 !important; }    /* Vermelho Escuro */
+
+/* Ajuste fino no card para a borda lateral brilhar */
+.asset-card {
+    transition: transform 0.2s ease, border-color 0.3s ease;
+    border: 1px solid #333; /* Borda padrão suave */
+}
+
+/* Botão de Adicionar com Verde de Confiança */
+.btn-success-custom {
+    background-color: #2ecc71 !important;
+    border-color: #2ecc71 !important;
+    color: #ffffff !important; /* Texto preto para melhor contraste no verde claro */
+    transition: all 0.3s ease;
+}
+
+.btn-success-custom:hover {
+    background-color: #27ae60 !important; /* Um tom levemente mais sóbrio ao passar o mouse */
+    border-color: #27ae60 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+}

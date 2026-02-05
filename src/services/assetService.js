@@ -14,17 +14,12 @@ export const AssetService = {
         });
     },
 
-    // BUSCA SUGESTÕES DE TICKERS (Autocomplete)
     async getTickerSuggestions(query) {
         if (!query || query.length < 2) return [];
-        
-        // Usamos o endpoint list para buscar tickers que combinem com o que foi digitado
         const url = `https://brapi.dev/api/quote/list?search=${query}&token=${BRAPI_TOKEN}`;
-        
         try {
             const response = await fetch(url);
             const data = await response.json();
-            // Retorna apenas os símbolos (ex: ["PETR4", "PETR3"])
             return data.stocks ? data.stocks.map(s => s.stock) : [];
         } catch (error) {
             console.error('Erro ao buscar sugestões:', error);
@@ -32,15 +27,19 @@ export const AssetService = {
         }
     },
 
-    // BUSCA PREÇO ATUAL DE UM TICKER ESPECÍFICO
+    // 1. ALTERADO: Agora retorna um objeto { price, changePercent }
     async getPrice(ticker) {
         const url = `https://brapi.dev/api/quote/${ticker}?token=${BRAPI_TOKEN}`;
         try {
             const response = await fetch(url);
             const data = await response.json();
-            return data.results?.[0]?.regularMarketPrice || 0;
+            const res = data.results?.[0];
+            return {
+                price: res?.regularMarketPrice || 0,
+                changePercent: res?.regularMarketChangePercent || 0
+            };
         } catch (error) {
-            return 0;
+            return { price: 0, changePercent: 0 };
         }
     },
 
@@ -57,6 +56,7 @@ export const AssetService = {
         }
     },
 
+    // 2. ALTERADO: Mapeia cada ticker para um objeto com preço e variação
     async getMarketPrices(tickers) {
         if (tickers.length === 0) return {};
         const tickersString = tickers.join(',');
@@ -64,11 +64,14 @@ export const AssetService = {
         try {
             const response = await fetch(url);
             const json = await response.json();
-            const prices = {};
+            const marketData = {};
             json.results.forEach(res => {
-                prices[res.symbol] = res.regularMarketPrice;
+                marketData[res.symbol] = {
+                    price: res.regularMarketPrice || 0,
+                    changePercent: res.regularMarketChangePercent || 0
+                };
             });
-            return prices;
+            return marketData;
         } catch (error) {
             return {};
         }

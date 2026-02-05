@@ -44,7 +44,7 @@ export const AddAssetView = {
                         </div>
 
                         <div class="col-12 col-md-2">
-                            <button type="submit" class="btn btn-primary w-100 fw-bold py-2">
+                            <button type="submit" class="btn btn-success-custom w-100 fw-bold py-2">
                                 ADICIONAR
                             </button>
                         </div>
