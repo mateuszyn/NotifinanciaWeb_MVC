@@ -2,14 +2,24 @@ import { AssetService } from '../services/assetService.js';
 import { AssetView } from '../views/AssetView.js';
 import { AddAssetView } from '../views/AddAssetView.js';
 import { AuthService } from '../services/authService.js';
+import { supabase } from '../services/supabaseClient.js'; // IMPORTAÇÃO NECESSÁRIA
 
 export const AssetController = {
     async init() {
         const user = await AuthService.getUser();
+
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('notifications_enabled')
+            .eq('id', user.id)
+            .maybeSingle(); // Use maybeSingle para evitar erros se for o primeiro acesso
+
+        // Se o perfil for nulo, define como false por padrão
+        user.notifications_enabled = profile ? profile.notifications_enabled : false;
+
         const userAssets = await AssetService.getAssets();
         const tickers = userAssets.map(a => a.ticker);
         
-        // Agora recebe um objeto de objetos { ticker: { price, changePercent } }
         const marketData = await AssetService.getMarketPrices(tickers);
 
         const enrichedAssets = userAssets.map(asset => {
@@ -17,7 +27,7 @@ export const AssetController = {
             return {
                 ...asset,
                 currentPrice: live.price,
-                dailyChange: live.changePercent // Novo dado para a lógica de cores
+                dailyChange: live.changePercent 
             };
         });
 
@@ -32,6 +42,47 @@ export const AssetController = {
         document.querySelector('#btn-logout')?.addEventListener('click', async () => {
             await AuthService.signOut();
             window.location.reload();
+        });
+
+        // --- BOTÃO DE NOTIFICAÇÃO (SINO) ---
+        document.querySelector('#btn-toggle-notif')?.addEventListener('click', async (e) => {
+            const btn = e.currentTarget;
+            const icon = btn.querySelector('i');
+            
+            try {
+                // 1. Adiciona a animação imediatamente (feedback visual instantâneo)
+                icon.classList.add('bell-animating');
+                
+                const user = await AuthService.getUser();
+                
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('notifications_enabled')
+                    .eq('id', user.id)
+                    .maybeSingle();
+
+                const novoEstado = profile ? !profile.notifications_enabled : true;
+
+                // 2. Salva no banco
+                const { error } = await supabase
+                    .from('profiles')
+                    .upsert({ 
+                        id: user.id, 
+                        email: user.email, 
+                        notifications_enabled: novoEstado,
+                        updated_at: new Date()
+                    });
+
+                if (error) throw error;
+
+                // 3. Atualiza a tela (o init() removerá a classe ao renderizar o novo estado)
+                await this.init(); 
+
+            } catch (error) {
+                console.error("Erro:", error);
+                icon.classList.remove('bell-animating'); // Remove animação em caso de erro
+                alert("Erro ao atualizar notificações.");
+            }
         });
 
         // --- BOTÕES DE ATALHO DE QUANTIDADE ---
@@ -60,7 +111,7 @@ export const AssetController = {
             }
         });
 
-        // --- BUSCA DE PREÇO E VARIAÇÃO AO DIGITAR TICKER ---
+        // --- BUSCA DE PREÇO AO DIGITAR TICKER ---
         tickerInput?.addEventListener('blur', async (e) => {
             const ticker = e.target.value.toUpperCase().trim();
             if (ticker) {
@@ -75,7 +126,6 @@ export const AssetController = {
                     if (priceDisplay) {
                         const sign = data.changePercent >= 0 ? '+' : '';
                         priceDisplay.innerText = `${data.price.toFixed(2)} (${sign}${data.changePercent.toFixed(2)}%)`;
-                        // Cor indicativa rápida no formulário
                         priceDisplay.className = data.changePercent >= 0 ? 'text-success' : 'text-danger';
                     }
                     if (infoSpan) infoSpan.style.display = 'inline';
@@ -87,7 +137,6 @@ export const AssetController = {
         const form = document.querySelector('#form-asset');
         form?.addEventListener('submit', async (e) => {
             e.preventDefault();
-
             const tickerValue = document.querySelector('#ticker').value.toUpperCase().trim();
             const submitBtn = form.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerText;
@@ -97,24 +146,19 @@ export const AssetController = {
 
             try {
                 const isValid = await AssetService.validateTicker(tickerValue);
-
                 if (!isValid) {
                     alert(`O ticker "${tickerValue}" não foi encontrado.`);
                     return;
                 }
-
                 const newAsset = {
                     ticker: tickerValue,
                     quantity: Number(document.querySelector('#quantity').value),
                     averagePrice: parseFloat(document.querySelector('#averagePrice').value)
                 };
-
                 await AssetService.addAsset(newAsset);
                 form.reset();
                 await this.init();
-
             } catch (error) {
-                console.error('Erro ao salvar:', error.message);
                 alert('Erro ao processar sua solicitação.');
             } finally {
                 submitBtn.innerText = originalText;
@@ -166,7 +210,6 @@ export const AssetController = {
                 quantity: Number(document.querySelector('#update-quantity').value),
                 averagePrice: parseFloat(document.querySelector('#update-averagePrice').value)
             };
-
             try {
                 await AssetService.updateAsset(id, data);
                 overlay.classList.remove('active');

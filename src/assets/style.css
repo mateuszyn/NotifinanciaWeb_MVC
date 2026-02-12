@@ -212,3 +212,36 @@ body {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
+
+#btn-toggle-notif {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+#btn-toggle-notif:hover {
+    transform: scale(1.1); /* Dá um leve zoom ao passar o mouse */
+}
+
+/* Animação de balanço */
+@keyframes bell-shake {
+  0% { transform: rotate(0); }
+  15% { transform: rotate(15deg); }
+  30% { transform: rotate(-15deg); }
+  45% { transform: rotate(10deg); }
+  60% { transform: rotate(-10deg); }
+  75% { transform: rotate(5deg); }
+  85% { transform: rotate(-5deg); }
+  100% { transform: rotate(0); }
+}
+
+/* Classe aplicada durante o clique */
+.bell-animating {
+  animation: bell-shake 0.5s ease-in-out;
+  opacity: 0.6;
+  pointer-events: none; /* Evita cliques duplos durante a animação */
+}
+
+#btn-toggle-notif i {
+  display: inline-block; /* Necessário para a rotação funcionar */
+  transition: all 0.3s ease;
+}
