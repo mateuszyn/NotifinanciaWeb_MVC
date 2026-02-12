@@ -174,3 +174,41 @@ body {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
 }
+
+/* Container que ocupa a tela toda e centraliza o conteúdo */
+.login-wrapper {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-dark); /* Usa a cor já definida no seu projeto */
+    padding: 20px;
+}
+
+/* Estilização do Card de Login */
+.login-card {
+    background-color: var(--card-bg); /* Usa a cor do card do seu projeto */
+    padding: 3rem;
+    border-radius: 16px;
+    border: 1px solid #333;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Botão customizado com as cores do Google/Projeto */
+.btn-google-login {
+    background-color: #ffffff;
+    color: #000;
+    font-weight: 600;
+    padding: 12px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.btn-google-login:hover {
+    background-color: #f1f1f1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+}
