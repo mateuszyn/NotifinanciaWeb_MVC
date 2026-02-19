@@ -2,85 +2,124 @@ import { AssetService } from '../services/assetService.js';
 import { AssetView } from '../views/AssetView.js';
 import { AddAssetView } from '../views/AddAssetView.js';
 import { AuthService } from '../services/authService.js';
-import { supabase } from '../services/supabaseClient.js'; // IMPORTAÇÃO NECESSÁRIA
+import { supabase } from '../services/supabaseClient.js';
 
 export const AssetController = {
     async init() {
         const user = await AuthService.getUser();
 
+        // 1. Busca perfil e preferência de ordenação
         const { data: profile } = await supabase
             .from('profiles')
-            .select('notifications_enabled')
+            .select('notifications_enabled, sort_by')
             .eq('id', user.id)
-            .maybeSingle(); // Use maybeSingle para evitar erros se for o primeiro acesso
+            .maybeSingle();
 
-        // Se o perfil for nulo, define como false por padrão
-        user.notifications_enabled = profile ? profile.notifications_enabled : false;
+        user.notifications_enabled = profile?.notifications_enabled || false;
+        user.sort_by = profile?.sort_by || 'pm_asc';
 
+        // 2. Busca ativos brutos
         const userAssets = await AssetService.getAssets();
         const tickers = userAssets.map(a => a.ticker);
         
+        // 3. Busca preços de mercado
         const marketData = await AssetService.getMarketPrices(tickers);
 
-        const enrichedAssets = userAssets.map(asset => {
+        // 4. CÁLCULO PRIMEIRO (Crucial para a ordenação funcionar)
+        let enrichedAssets = userAssets.map(asset => {
             const live = marketData[asset.ticker] || { price: 0, changePercent: 0 };
+            const currentPrice = live.price;
+            
+            // Cálculo da variação baseado no preço médio
+            const variacaoPM = asset.averagePrice > 0 
+                ? ((currentPrice / asset.averagePrice) - 1) * 100 
+                : 0;
+
             return {
                 ...asset,
-                currentPrice: live.price,
-                dailyChange: live.changePercent 
+                currentPrice,
+                dailyChange: live.changePercent,
+                variacaoPM: variacaoPM, // Valor numérico para o sort
+                totalValue: currentPrice * asset.quantity
             };
         });
 
+        // 5. ORDENAÇÃO DEPOIS (Agora os valores existem!)
+        enrichedAssets = this.sortAssets(enrichedAssets, user.sort_by);
+
+        // 6. RENDERIZAÇÃO POR ÚLTIMO
         AssetView.render(enrichedAssets, user);
         AddAssetView.render();
 
         this.setupEventListeners();
     },
 
+    sortAssets(assets, criteria) {
+        const sorted = [...assets];
+        switch (criteria) {
+            case 'name_asc': return sorted.sort((a, b) => a.ticker.localeCompare(b.ticker));
+            case 'name_desc': return sorted.sort((a, b) => b.ticker.localeCompare(a.ticker));
+            case 'day_desc': return sorted.sort((a, b) => b.dailyChange - a.dailyChange);
+            case 'day_asc': return sorted.sort((a, b) => a.dailyChange - b.dailyChange);
+            case 'pm_asc': 
+                return sorted.sort((a, b) => (a.variacaoPM || 0) - (b.variacaoPM || 0));
+            case 'pm_desc': 
+                return sorted.sort((a, b) => (b.variacaoPM || 0) - (a.variacaoPM || 0));
+            case 'total_desc': return sorted.sort((a, b) => b.totalValue - a.totalValue);
+            case 'total_asc': return sorted.sort((a, b) => a.totalValue - b.totalValue);
+            case 'qty_desc': return sorted.sort((a, b) => b.quantity - a.quantity);
+            case 'qty_asc': return sorted.sort((a, b) => a.quantity - b.quantity);
+            default: return sorted;
+        }
+    },
+
     setupEventListeners() {
-        // --- LOGOUT ---
+        // --- ORDENAÇÃO (NOVO) ---
+        document.querySelector('#sort-select')?.addEventListener('change', async (e) => {
+            const newSort = e.target.value;
+            const user = await AuthService.getUser();
+            
+            // 1. Feedback visual imediato (opcional: desativar o select enquanto salva)
+            e.target.disabled = true;
+
+            try {
+                // 2. Salva no Supabase
+                const { error } = await supabase
+                    .from('profiles')
+                    .update({ sort_by: newSort })
+                    .eq('id', user.id);
+
+                if (error) throw error;
+
+                // 3. Recarrega os dados e a View
+                await this.init(); 
+            } catch (err) {
+                console.error("Erro ao salvar ordenação:", err);
+            } finally {
+                e.target.disabled = false;
+            }
+        });
+
+        // --- OUTROS LISTENERS ---
+        // (Logout)
         document.querySelector('#btn-logout')?.addEventListener('click', async () => {
             await AuthService.signOut();
             window.location.reload();
         });
 
-        // --- BOTÃO DE NOTIFICAÇÃO (SINO) ---
+        // (Notificações)
         document.querySelector('#btn-toggle-notif')?.addEventListener('click', async (e) => {
             const btn = e.currentTarget;
             const icon = btn.querySelector('i');
-            
             try {
-                // 1. Adiciona a animação imediatamente (feedback visual instantâneo)
                 icon.classList.add('bell-animating');
-                
                 const user = await AuthService.getUser();
-                
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('notifications_enabled')
-                    .eq('id', user.id)
-                    .maybeSingle();
-
+                const { data: profile } = await supabase.from('profiles').select('notifications_enabled').eq('id', user.id).maybeSingle();
                 const novoEstado = profile ? !profile.notifications_enabled : true;
-
-                // 2. Salva no banco
-                const { error } = await supabase
-                    .from('profiles')
-                    .upsert({ 
-                        id: user.id, 
-                        email: user.email, 
-                        notifications_enabled: novoEstado,
-                        updated_at: new Date()
-                    });
-
-                if (error) throw error;
-
-                // 3. Atualiza a tela (o init() removerá a classe ao renderizar o novo estado)
+                await supabase.from('profiles').upsert({ id: user.id, email: user.email, notifications_enabled: novoEstado, updated_at: new Date() });
                 await this.init(); 
-
             } catch (error) {
-                console.error("Erro:", error);
-                icon.classList.remove('bell-animating'); // Remove animação em caso de erro
+                icon.classList.remove('bell-animating');
                 alert("Erro ao atualizar notificações.");
             }
         });

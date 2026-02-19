@@ -75,6 +75,20 @@ export const AssetView = {
             <header class="dashboard-header">
                 <div>NOTIFINANCIA: Dashboard</div>
                 <div class="d-flex align-items-center">
+                    <div class="sort-container">
+                        <select id="sort-select">
+                            <option value="pm_asc">Variação P.M. (Menor %)</option>
+                            <option value="pm_desc">Variação P.M. (Maior %)</option>
+                            <option value="name_asc">Nome (A-Z)</option>
+                            <option value="name_desc">Nome (Z-A)</option>
+                            <option value="total_desc">Maior Valor Total</option>
+                            <option value="total_asc">Menor Valor Total</option>
+                            <option value="day_desc">Mudança Dia (Maior %)</option>
+                            <option value="day_asc">Mudança Dia (Menor %)</option>
+                            <option value="qty_desc">Quantidade (Maior)</option>
+                            <option value="qty_asc">Quantidade (Menor)</option>
+                    </select>
+                    </div>
                     <button id="btn-toggle-notif" 
                             class="btn btn-link me-3 p-0 shadow-none border-0" 
                             title="${bellTitle}">
@@ -95,6 +109,11 @@ export const AssetView = {
 
             ${this.renderUpdateModal()}
         `;
+        const select = document.querySelector('#sort-select');
+            if (select && user.sort_by) {
+                select.value = user.sort_by;
+        }
+        
     },
 
     renderUpdateModal() {

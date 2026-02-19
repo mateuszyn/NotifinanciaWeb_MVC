@@ -245,3 +245,50 @@ body {
   display: inline-block; /* Necessário para a rotação funcionar */
   transition: all 0.3s ease;
 }
+/* Container do seletor para garantir alinhamento */
+.sort-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-right: 25px;
+}
+
+/* Estilização do Select */
+#sort-select {
+    appearance: none; /* Remove a seta padrão do navegador */
+    -webkit-appearance: none;
+    background-color: #ffffff;
+    border: 1px solid #e0e4e8;
+    border-radius: 8px;
+    padding: 6px 32px 6px 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236c757d' class='bi bi-chevron-down' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+/* Efeito de Hover */
+#sort-select:hover {
+    border-color: #28a745; /* Cor verde do Notifinancia */
+    background-color: #f8fbf9;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.1);
+}
+
+/* Efeito de Foco */
+#sort-select:focus {
+    outline: none;
+    border-color: #28a745;
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
+}
+
+/* Estilo para as options (limitação: browsers limitam estilização de options nativas) */
+#sort-select option {
+    font-weight: normal;
+    padding: 10px;
+}
