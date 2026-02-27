@@ -8,29 +8,24 @@ export const AssetController = {
     async init() {
         const user = await AuthService.getUser();
 
-        // 1. Busca perfil e preferência de ordenação
+        // --- 'preferred_broker' no select ---
         const { data: profile } = await supabase
             .from('profiles')
-            .select('notifications_enabled, sort_by')
+            .select('notifications_enabled, sort_by, preferred_broker') 
             .eq('id', user.id)
             .maybeSingle();
 
         user.notifications_enabled = profile?.notifications_enabled || false;
         user.sort_by = profile?.sort_by || 'pm_asc';
+        user.preferred_broker = profile?.preferred_broker || 'Nubank'; 
 
-        // 2. Busca ativos brutos
         const userAssets = await AssetService.getAssets();
         const tickers = userAssets.map(a => a.ticker);
-        
-        // 3. Busca preços de mercado
         const marketData = await AssetService.getMarketPrices(tickers);
 
-        // 4. CÁLCULO PRIMEIRO (Crucial para a ordenação funcionar)
         let enrichedAssets = userAssets.map(asset => {
             const live = marketData[asset.ticker] || { price: 0, changePercent: 0 };
             const currentPrice = live.price;
-            
-            // Cálculo da variação baseado no preço médio
             const variacaoPM = asset.averagePrice > 0 
                 ? ((currentPrice / asset.averagePrice) - 1) * 100 
                 : 0;
@@ -39,15 +34,13 @@ export const AssetController = {
                 ...asset,
                 currentPrice,
                 dailyChange: live.changePercent,
-                variacaoPM: variacaoPM, // Valor numérico para o sort
+                variacaoPM: variacaoPM,
                 totalValue: currentPrice * asset.quantity
             };
         });
 
-        // 5. ORDENAÇÃO DEPOIS (Agora os valores existem!)
         enrichedAssets = this.sortAssets(enrichedAssets, user.sort_by);
 
-        // 6. RENDERIZAÇÃO POR ÚLTIMO
         AssetView.render(enrichedAssets, user);
         AddAssetView.render();
 
@@ -59,14 +52,12 @@ export const AssetController = {
         switch (criteria) {
             case 'name_asc': return sorted.sort((a, b) => a.ticker.localeCompare(b.ticker));
             case 'name_desc': return sorted.sort((a, b) => b.ticker.localeCompare(a.ticker));
-            case 'day_desc': return sorted.sort((a, b) => b.dailyChange - a.dailyChange);
-            case 'day_asc': return sorted.sort((a, b) => a.dailyChange - b.dailyChange);
-            case 'pm_asc': 
-                return sorted.sort((a, b) => (a.variacaoPM || 0) - (b.variacaoPM || 0));
-            case 'pm_desc': 
-                return sorted.sort((a, b) => (b.variacaoPM || 0) - (a.variacaoPM || 0));
-            case 'total_desc': return sorted.sort((a, b) => b.totalValue - a.totalValue);
-            case 'total_asc': return sorted.sort((a, b) => a.totalValue - b.totalValue);
+            case 'day_desc': return sorted.sort((a, b) => (b.dailyChange || 0) - (a.dailyChange || 0));
+            case 'day_asc': return sorted.sort((a, b) => (a.dailyChange || 0) - (b.dailyChange || 0));
+            case 'pm_asc': return sorted.sort((a, b) => (a.variacaoPM || 0) - (b.variacaoPM || 0));
+            case 'pm_desc': return sorted.sort((a, b) => (b.variacaoPM || 0) - (a.variacaoPM || 0));
+            case 'total_desc': return sorted.sort((a, b) => (b.totalValue || 0) - (a.totalValue || 0));
+            case 'total_asc': return sorted.sort((a, b) => (a.totalValue || 0) - (b.totalValue || 0));
             case 'qty_desc': return sorted.sort((a, b) => b.quantity - a.quantity);
             case 'qty_asc': return sorted.sort((a, b) => a.quantity - b.quantity);
             default: return sorted;
@@ -74,31 +65,29 @@ export const AssetController = {
     },
 
     setupEventListeners() {
-        // --- ORDENAÇÃO (NOVO) ---
+        // --- 1. SELETOR DE ORDENAÇÃO (CORRIGIDO) ---
         document.querySelector('#sort-select')?.addEventListener('change', async (e) => {
             const newSort = e.target.value;
             const user = await AuthService.getUser();
-            
-            // 1. Feedback visual imediato (opcional: desativar o select enquanto salva)
             e.target.disabled = true;
-
             try {
-                // 2. Salva no Supabase
-                const { error } = await supabase
-                    .from('profiles')
-                    .update({ sort_by: newSort })
-                    .eq('id', user.id);
-
-                if (error) throw error;
-
-                // 3. Recarrega os dados e a View
+                await supabase.from('profiles').update({ sort_by: newSort }).eq('id', user.id);
                 await this.init(); 
-            } catch (err) {
-                console.error("Erro ao salvar ordenação:", err);
-            } finally {
-                e.target.disabled = false;
-            }
+            } catch (err) { console.error(err); } 
+            finally { e.target.disabled = false; }
         });
+
+        // --- 2. SELETOR DE CORRETORA (INDEPENDENTE) ---
+        document.querySelector('#broker-select')?.addEventListener('change', async (e) => {
+            const broker = e.target.value;
+            const user = await AuthService.getUser();
+            e.target.disabled = true;
+            try {
+                await supabase.from('profiles').update({ preferred_broker: broker }).eq('id', user.id);
+                await this.init(); 
+            } catch (err) { console.error(err); } 
+            finally { e.target.disabled = false; }
+        });// FECHA o listener da corretora aqui
 
         // --- OUTROS LISTENERS ---
         // (Logout)
