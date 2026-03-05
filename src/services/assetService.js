@@ -60,21 +60,19 @@ export const AssetService = {
     async getMarketPrices(tickers) {
         if (tickers.length === 0) return {};
         const tickersString = tickers.join(',');
-        const url = `https://brapi.dev/api/quote/${tickersString}?token=${BRAPI_TOKEN}`;
-        try {
+        const marketData = {};
+
+        for (let index = 0; index < tickers.length; index++) {
+            const element = tickers[index];
+            const url = `https://brapi.dev/api/quote/${element}?token=${BRAPI_TOKEN}`;
             const response = await fetch(url);
-            const json = await response.json();
-            const marketData = {};
-            json.results.forEach(res => {
-                marketData[res.symbol] = {
-                    price: res.regularMarketPrice || 0,
-                    changePercent: res.regularMarketChangePercent || 0
-                };
-            });
-            return marketData;
-        } catch (error) {
-            return {};
+            const data = await response.json();
+            marketData[element] = {
+                price: data.results?.[0]?.regularMarketPrice || 0,
+                changePercent: data.results?.[0]?.regularMarketChangePercent || 0
+            };
         }
+        return marketData
     },
 
     async addAsset(asset) {
