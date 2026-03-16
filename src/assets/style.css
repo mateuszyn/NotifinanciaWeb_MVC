@@ -296,3 +296,55 @@ body {
     filter: brightness(0.95);
     transform: translateY(-1px);
 }
+
+/* Spinner Animado */
+.loader-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Classe para o select quando estiver carregando */
+.select-loading {
+    opacity: 0.7;
+    cursor: wait !important;
+}
+
+/* Container para o select do broker */
+.broker-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Spinner dentro do seletor */
+.loader-spinner-inner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top-color: currentColor; /* Segue a cor do texto do broker */
+    animation: spin 0.8s linear infinite;
+    position: absolute;
+    right: 35px; /* Fica ao lado da setinha do dropdown */
+    pointer-events: none; /* Não atrapalha o clique */
+    display: none; /* Escondido por padrão */
+}
+
+/* Quando estiver carregando, mostramos o spinner */
+.is-loading .loader-spinner-inner {
+    display: block;
+}
+
+/* Esconde a seta original enquanto carrega para não embolar */
+.is-loading #broker-select {
+    background-image: none !important;
+}

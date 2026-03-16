@@ -78,15 +78,44 @@ export const AssetController = {
         });
 
         // --- 2. SELETOR DE CORRETORA (INDEPENDENTE) ---
+        // --- 2. SELETOR DE CORRETORA (COM FEEDBACK) ---
         document.querySelector('#broker-select')?.addEventListener('change', async (e) => {
-            const broker = e.target.value;
+            const brokerSelect = e.target;
+            const originalContent = brokerSelect.innerHTML; // Guarda as opções
+            const broker = brokerSelect.value;
             const user = await AuthService.getUser();
-            e.target.disabled = true;
+            
+            // Feedback Visual: Desativa e sinaliza carregamento
+            brokerSelect.disabled = true;
+            brokerSelect.classList.add('select-loading');
+            
+            // Opcional: Mudar o título do dashboard temporariamente para "Carregando..."
+            const headerTitle = document.querySelector('.dashboard-header div:first-child');
+            const originalTitle = headerTitle.innerText;
+            headerTitle.innerHTML = `NOTIFINANCIA <span class="loader-spinner ms-2"></span>`;
+
             try {
-                await supabase.from('profiles').update({ preferred_broker: broker }).eq('id', user.id);
+                const { error } = await supabase
+                    .from('profiles')
+                    .update({ preferred_broker: broker })
+                    .eq('id', user.id);
+
+                if (error) throw error;
+                
+                // Recarrega tudo (isso vai renderizar a view novamente com a nova cor)
                 await this.init(); 
-            } catch (err) { console.error(err); } 
-            finally { e.target.disabled = false; }
+            } catch (err) {
+                console.error("Erro ao salvar corretora:", err);
+                alert("Erro ao trocar corretora.");
+            } finally {
+                // O init() já reconstrói o HTML, então não precisamos resetar manualmente,
+                // mas por segurança se algo falhar:
+                if (brokerSelect) {
+                    brokerSelect.disabled = false;
+                    brokerSelect.classList.remove('select-loading');
+                    headerTitle.innerText = originalTitle;
+                }
+            }
         });// FECHA o listener da corretora aqui
 
         // --- OUTROS LISTENERS ---
