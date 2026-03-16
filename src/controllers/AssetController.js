@@ -77,7 +77,6 @@ export const AssetController = {
             finally { e.target.disabled = false; }
         });
 
-        // --- 2. SELETOR DE CORRETORA (INDEPENDENTE) ---
         // --- 2. SELETOR DE CORRETORA (COM FEEDBACK) ---
         document.querySelector('#broker-select')?.addEventListener('change', async (e) => {
             const brokerSelect = e.target;
