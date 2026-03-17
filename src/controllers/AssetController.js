@@ -78,41 +78,37 @@ export const AssetController = {
         });
 
         // --- 2. SELETOR DE CORRETORA (COM FEEDBACK) ---
-        document.querySelector('#broker-select')?.addEventListener('change', async (e) => {
-            const brokerSelect = e.target;
-            const originalContent = brokerSelect.innerHTML; // Guarda as opções
-            const broker = brokerSelect.value;
+        // --- 2. SELETOR DE CORRETORA (ESTRUTURA LIMPA) ---
+        const brokerSelect = document.querySelector('#broker-select');
+        brokerSelect?.addEventListener('change', async (e) => {
+            const newBroker = e.target.value;
             const user = await AuthService.getUser();
             
-            // Feedback Visual: Desativa e sinaliza carregamento
-            brokerSelect.disabled = true;
-            brokerSelect.classList.add('select-loading');
-            
-            // Opcional: Mudar o título do dashboard temporariamente para "Carregando..."
-            const headerTitle = document.querySelector('.dashboard-header div:first-child');
-            const originalTitle = headerTitle.innerText;
-            headerTitle.innerHTML = `NOTIFINANCIA <span class="loader-spinner ms-2"></span>`;
+            // Bloqueia para evitar cliques duplos
+            e.target.disabled = true;
 
             try {
+                // 1. Atualiza no Supabase
                 const { error } = await supabase
                     .from('profiles')
-                    .update({ preferred_broker: broker })
+                    .update({ preferred_broker: newBroker })
                     .eq('id', user.id);
 
                 if (error) throw error;
-                
-                // Recarrega tudo (isso vai renderizar a view novamente com a nova cor)
+
+                // 2. IMPORTANTE: Atualizamos o objeto 'user' localmente antes do init
+                // Isso garante que a View receba o dado novo imediatamente
+                user.preferred_broker = newBroker;
+
+                // 3. Reinicializa a tela para aplicar as cores e links novos
                 await this.init(); 
+
             } catch (err) {
                 console.error("Erro ao salvar corretora:", err);
                 alert("Erro ao trocar corretora.");
             } finally {
-                // O init() já reconstrói o HTML, então não precisamos resetar manualmente,
-                // mas por segurança se algo falhar:
-                if (brokerSelect) {
-                    brokerSelect.disabled = false;
-                    brokerSelect.classList.remove('select-loading');
-                    headerTitle.innerText = originalTitle;
+                if (document.querySelector('#broker-select')) {
+                    document.querySelector('#broker-select').disabled = false;
                 }
             }
         });// FECHA o listener da corretora aqui

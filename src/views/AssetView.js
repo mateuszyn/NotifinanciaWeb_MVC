@@ -3,7 +3,6 @@ export const AssetView = {
         const app = document.querySelector('#app');
         const userName = user.user_metadata?.full_name || user.email.split('@')[0];
         
-        //  Links simplificados (apenas Play Store)
         const BROKERS = {
             'Nubank': { color: '#820AD1', textColor: '#FFFFFF', url: 'https://play.google.com/store/apps/details?id=com.nu.production' },
             'Inter': { color: '#FF7A00', textColor: '#FFFFFF', url: 'https://play.google.com/store/apps/details?id=br.com.intermedium' },
@@ -14,7 +13,6 @@ export const AssetView = {
         const currentBroker = user.preferred_broker || 'Nubank';
         const brokerInfo = BROKERS[currentBroker];
 
-        // Lógica de Notificação
         const isNotifActive = user.notifications_enabled;
         const bellIcon = isNotifActive ? 'bi-bell-fill text-warning' : 'bi-bell text-secondary';
         const bellTitle = isNotifActive ? "Notificações Diárias (18h) Ativadas" : "Notificações Diárias (18h) Desativadas";
@@ -83,11 +81,9 @@ export const AssetView = {
                             <button id="btn-toggle-notif" class="btn btn-link p-0 shadow-none border-0" title="${bellTitle}">
                                 <i class="${bellIcon} fs-4"></i>
                             </button>
-                            
                             <span class="text-secondary d-none d-md-block small">
                                 Olá, <b class="text-white">${userName}</b>
                             </span>
-                            
                             <button id="btn-logout" class="btn btn-outline-danger btn-sm rounded-pill px-3">Sair</button>
                         </div>
                     </div>
@@ -113,8 +109,6 @@ export const AssetView = {
                 </div>
             </header>
 
-            </div>
-
             <div class="container mt-4 mb-5 pb-5">
                 <div class="row" id="asset-list">${cardsHtml}</div>
             </div>
@@ -126,32 +120,39 @@ export const AssetView = {
                         ADICIONAR ATIVO
                     </button>
                 </div>
-                <div class="drawer-content" id="form-container">
-                    </div>
+                <div class="drawer-content" id="form-container"></div>
             </div>
 
             ${this.renderUpdateModal()}
         `;
 
+        // Lógica de Ordenação
         const sortSelect = document.querySelector('#sort-select');
         if (sortSelect && user.sort_by) sortSelect.value = user.sort_by;
 
+        // Lógica da Corretora (Visual e Dinâmica)
         const brokerSelect = document.querySelector('#broker-select');
         if (brokerSelect) {
-            brokerSelect.value = currentBroker;
-            brokerSelect.style.backgroundColor = brokerInfo.color;
-            brokerSelect.style.color = brokerInfo.textColor;
+            brokerSelect.addEventListener('change', (e) => {
+                const selected = e.target.value;
+                const info = BROKERS[selected];
+                
+                // Aplica a cor instantaneamente no Select para feedback visual
+                brokerSelect.style.backgroundColor = info.color;
+                brokerSelect.style.color = info.textColor;
+                
+                // Dispara o evento personalizado que seu Controller deve ouvir para salvar no banco
+                brokerSelect.dispatchEvent(new CustomEvent('brokerChanged', { detail: selected }));
+            });
         }
 
-        // PASSO 2: Lógica Blindada de abrir/fechar a gaveta
+        // Lógica da Gaveta
         const drawer = document.querySelector('#add-asset-drawer');
         const drawerHeader = document.querySelector('#drawer-toggle');
         
         if (drawer && drawerHeader) {
-            // Removemos eventos antigos se existirem para não duplicar
             drawerHeader.replaceWith(drawerHeader.cloneNode(true));
             const newDrawerHeader = document.querySelector('#drawer-toggle');
-            
             newDrawerHeader.addEventListener('click', () => {
                 drawer.classList.toggle('collapsed');
             });
@@ -167,17 +168,14 @@ export const AssetView = {
                     </h3>
                     <form id="form-update-asset">
                         <input type="hidden" id="update-id">
-                        
                         <div class="form-group mb-3">
                             <label class="small text-secondary fw-bold mb-1">Quantidade</label>
                             <input type="number" id="update-quantity" class="form-control bg-black text-white border-secondary" required step="any">
                         </div>
-                        
                         <div class="form-group mb-4">
                             <label class="small text-secondary fw-bold mb-1">Preço Médio (R$)</label>
                             <input type="number" id="update-averagePrice" class="form-control bg-black text-white border-secondary" required step="0.01">
                         </div>
-                        
                         <div class="d-flex gap-3 mt-4">
                             <button type="button" id="btn-close-modal" class="btn btn-outline-secondary flex-grow-1 fw-bold py-2">Cancelar</button>
                             <button type="submit" class="btn btn-success flex-grow-1 fw-bold py-2">Salvar</button>
