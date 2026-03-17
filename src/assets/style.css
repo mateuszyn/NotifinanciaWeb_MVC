@@ -188,42 +188,38 @@ body {
     box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
 }
 
-/* Container que ocupa a tela toda e centraliza o conteúdo */
 .login-wrapper {
-    height: 100vh;
+    min-height: 100vh;
+    background-color: #121212; /* Fundo bem escuro */
     display: flex;
     align-items: center;
-    justify-content: center;
-    background-color: var(--bg-dark); /* Usa a cor já definida no seu projeto */
-    padding: 20px;
 }
 
-/* Estilização do Card de Login */
 .login-card {
-    background-color: var(--card-bg); /* Usa a cor do card do seu projeto */
-    padding: 3rem;
-    border-radius: 16px;
+    background-color: #212529;
+    padding: 40px;
+    border-radius: 24px;
     border: 1px solid #333;
-    width: 100%;
-    max-width: 400px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
-/* Botão customizado com as cores do Google/Projeto */
 .btn-google-login {
     background-color: #ffffff;
-    color: #000;
-    font-weight: 600;
-    padding: 12px;
-    border-radius: 8px;
+    color: #000000;
+    border-radius: 12px;
     transition: all 0.3s ease;
-    border: none;
 }
 
 .btn-google-login:hover {
     background-color: #f1f1f1;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+    box-shadow: 0 5px 15px rgba(255,255,255,0.1);
+}
+
+/* Responsividade de fontes para a Landing Page */
+@media (max-width: 768px) {
+    .display-4 {
+        font-size: 2.2rem;
+    }
 }
 
 #btn-toggle-notif {
