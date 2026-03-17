@@ -3,10 +3,10 @@ import { supabase } from './supabaseClient.js';
 export const AuthService = {
     // Abre a janelinha do Google
     async signInWithGoogle() {
-    // Se o site estiver rodando em produção, usa o domínio, se não, usa o que estiver na barra de endereços
-    const redirectURL = import.meta.env.PROD 
-        ? 'https://notifinancia.online' 
-        : window.location.origin;
+    // Se estiver rodando no PC (npm run dev), usa o localhost. Se estiver na Vercel, usa o site oficial.
+    const redirectURL = import.meta.env.DEV 
+        ? 'http://localhost:5173' 
+        : 'https://notifinancia.online';
 
     const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',

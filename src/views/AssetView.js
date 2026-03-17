@@ -3,17 +3,16 @@ export const AssetView = {
         const app = document.querySelector('#app');
         const userName = user.user_metadata?.full_name || user.email.split('@')[0];
         
+        //  Links simplificados (apenas Play Store)
         const BROKERS = {
-            'Nubank': { color: '#820AD1', textColor: '#FFFFFF', webUrl: 'https://nubank.com.br/', appUrl: 'https://play.google.com/store/apps/details?id=com.nu.production' },
-            'Inter': { color: '#FF7A00', textColor: '#FFFFFF', webUrl: 'https://inter.co/', appUrl: 'https://play.google.com/store/apps/details?id=br.com.intermedium' },
-            'XP': { color: '#212529', textColor: '#FFFFFF', webUrl: 'https://www.xpi.com.br/login/', appUrl: 'https://play.google.com/store/apps/details?id=br.com.xp.investimentos' },
-            'Rico': { color: '#005AAA', textColor: '#FF8A00', webUrl: 'https://www.rico.com.vc/login/', appUrl: 'https://play.google.com/store/apps/details?id=com.rico.fox' }
+            'Nubank': { color: '#820AD1', textColor: '#FFFFFF', url: 'https://play.google.com/store/apps/details?id=com.nu.production' },
+            'Inter': { color: '#FF7A00', textColor: '#FFFFFF', url: 'https://play.google.com/store/apps/details?id=br.com.intermedium' },
+            'XP': { color: '#212529', textColor: '#FFFFFF', url: 'https://play.google.com/store/apps/details?id=br.com.xp.investimentos' },
+            'Rico': { color: '#005AAA', textColor: '#FF8A00', url: 'https://play.google.com/store/apps/details?id=com.rico.fox' }
         };
 
         const currentBroker = user.preferred_broker || 'Nubank';
         const brokerInfo = BROKERS[currentBroker];
-        const isMobile = /Android|iPhone/i.test(navigator.userAgent);
-        const targetUrl = isMobile ? brokerInfo.appUrl : brokerInfo.webUrl;
 
         // Lógica de Notificação
         const isNotifActive = user.notifications_enabled;
@@ -61,64 +60,101 @@ export const AssetView = {
                             </div>
                         </div>
                         
-                        <a href="${targetUrl}" target="_blank" class="btn w-100 mt-3 d-flex align-items-center justify-content-center gap-2" 
+                        <a href="${brokerInfo.url}" target="_blank" class="btn w-100 mt-3 d-flex align-items-center justify-content-center gap-2" 
                            style="background-color: ${brokerInfo.color}; color: ${brokerInfo.textColor}; border: none; font-weight: bold; border-radius: 8px; height: 45px;">
                            <i class="bi bi-box-arrow-up-right"></i> Operar na ${currentBroker}
                         </a>
                     </div>
                 </div>`;
         }).join('');
-
+        
         app.innerHTML = `
-            <header class="dashboard-header d-flex justify-content-between align-items-center p-3">
-                <div class="fw-bold fs-5 text-success">NOTIFINANCIA</div>
-                
-                <div class="header-controls shadow-sm">
-                    <div class="sort-container">
-                        <select id="sort-select">
-                            <option value="pm_asc">Variação P.M. (Menor %)</option>
-                            <option value="pm_desc">Variação P.M. (Maior %)</option>
-                            <option value="name_asc">Nome (A-Z)</option>
-                            <option value="total_desc">Maior Valor Total</option>
-                        </select>
+            <header class="bg-dark px-3 py-4 border-bottom border-secondary">
+                <div class="container p-0">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="header-brand">
+                            <div class="fw-bold text-success title-responsive" style="line-height: 1.1;">NOTIFINANCIA</div>
+                            <div class="text-secondary fw-bold subtitle-responsive mt-1">
+                                Relatórios Diários Sobre Sua Carteira de Investimentos!
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex align-items-center gap-2 gap-md-3">
+                            <button id="btn-toggle-notif" class="btn btn-link p-0 shadow-none border-0" title="${bellTitle}">
+                                <i class="${bellIcon} fs-4"></i>
+                            </button>
+                            
+                            <span class="text-secondary d-none d-md-block small">
+                                Olá, <b class="text-white">${userName}</b>
+                            </span>
+                            
+                            <button id="btn-logout" class="btn btn-outline-danger btn-sm rounded-pill px-3">Sair</button>
+                        </div>
                     </div>
 
-                    <div class="broker-container">
-                        <select id="broker-select">
-                            <option value="Nubank" ${currentBroker === 'Nubank' ? 'selected' : ''}>Nubank</option>
-                            <option value="Inter" ${currentBroker === 'Inter' ? 'selected' : ''}>Inter</option>
-                            <option value="XP" ${currentBroker === 'XP' ? 'selected' : ''}>XP</option>
-                            <option value="Rico" ${currentBroker === 'Rico' ? 'selected' : ''}>Rico</option>
-                        </select>
+                    <div class="d-flex justify-content-center">
+                        <div class="d-flex flex-row gap-2 w-100 justify-content-center" style="max-width: 600px;">
+                            <select id="sort-select" class="form-select bg-dark text-white border-secondary form-select-sm w-50">
+                                <option value="pm_asc">P.M. (Menor %)</option>
+                                <option value="pm_desc">P.M. (Maior %)</option>
+                                <option value="name_asc">Nome (A-Z)</option>
+                                <option value="total_desc">Valor Total</option>
+                            </select>
+
+                            <select id="broker-select" class="form-select border-secondary form-select-sm w-50" 
+                                    style="background-color: ${brokerInfo.color}; color: ${brokerInfo.textColor}; font-weight: bold;">
+                                <option value="Nubank" ${currentBroker === 'Nubank' ? 'selected' : ''}>Nubank</option>
+                                <option value="Inter" ${currentBroker === 'Inter' ? 'selected' : ''}>Inter</option>
+                                <option value="XP" ${currentBroker === 'XP' ? 'selected' : ''}>XP</option>
+                                <option value="Rico" ${currentBroker === 'Rico' ? 'selected' : ''}>Rico</option>
+                            </select>
+                        </div>
                     </div>
-
-                    <button id="btn-toggle-notif" class="btn btn-link p-0 shadow-none border-0" title="${bellTitle}">
-                        <i class="${bellIcon} fs-4"></i>
-                    </button>
-                </div>
-
-                <div class="d-flex align-items-center gap-3">
-                    <span class="d-none d-lg-inline text-secondary">Olá, <b>${userName}</b></span>
-                    <button id="btn-logout" class="btn btn-outline-danger btn-sm rounded-pill">Sair</button>
                 </div>
             </header>
 
-            <div class="container mt-4">
-                <div class="row" id="asset-list">${cardsHtml}</div>
-                <div id="form-container"></div>
             </div>
+
+            <div class="container mt-4 mb-5 pb-5">
+                <div class="row" id="asset-list">${cardsHtml}</div>
+            </div>
+
+            <div id="add-asset-drawer" class="bottom-drawer collapsed"> 
+                <div class="drawer-header" id="drawer-toggle">
+                    <div class="drag-handle"></div>
+                    <button class="btn btn-success w-100 fw-bold py-2 mt-3 fake-add-btn">
+                        ADICIONAR ATIVO
+                    </button>
+                </div>
+                <div class="drawer-content" id="form-container">
+                    </div>
+            </div>
+
             ${this.renderUpdateModal()}
         `;
 
         const sortSelect = document.querySelector('#sort-select');
         if (sortSelect && user.sort_by) sortSelect.value = user.sort_by;
 
-        // Sincroniza o visual do broker-select (cor e valor)
         const brokerSelect = document.querySelector('#broker-select');
         if (brokerSelect) {
             brokerSelect.value = currentBroker;
             brokerSelect.style.backgroundColor = brokerInfo.color;
             brokerSelect.style.color = brokerInfo.textColor;
+        }
+
+        // PASSO 2: Lógica Blindada de abrir/fechar a gaveta
+        const drawer = document.querySelector('#add-asset-drawer');
+        const drawerHeader = document.querySelector('#drawer-toggle');
+        
+        if (drawer && drawerHeader) {
+            // Removemos eventos antigos se existirem para não duplicar
+            drawerHeader.replaceWith(drawerHeader.cloneNode(true));
+            const newDrawerHeader = document.querySelector('#drawer-toggle');
+            
+            newDrawerHeader.addEventListener('click', () => {
+                drawer.classList.toggle('collapsed');
+            });
         }
     },
 
@@ -126,20 +162,25 @@ export const AssetView = {
         return `
             <div class="modal-overlay" id="update-modal-overlay">
                 <div class="custom-modal">
-                    <h3 class="modal-title">Editar <span id="modal-ticker-title"></span></h3>
+                    <h3 class="modal-title text-white fs-5 mb-4 border-bottom border-secondary pb-2">
+                        Editar <span id="modal-ticker-title" class="text-success fw-bold"></span>
+                    </h3>
                     <form id="form-update-asset">
                         <input type="hidden" id="update-id">
+                        
                         <div class="form-group mb-3">
-                            <label>Quantidade</label>
-                            <input type="number" id="update-quantity" class="form-control" required step="any">
+                            <label class="small text-secondary fw-bold mb-1">Quantidade</label>
+                            <input type="number" id="update-quantity" class="form-control bg-black text-white border-secondary" required step="any">
                         </div>
-                        <div class="form-group mb-3">
-                            <label>Preço Médio (R$)</label>
-                            <input type="number" id="update-averagePrice" class="form-control" required step="0.01">
+                        
+                        <div class="form-group mb-4">
+                            <label class="small text-secondary fw-bold mb-1">Preço Médio (R$)</label>
+                            <input type="number" id="update-averagePrice" class="form-control bg-black text-white border-secondary" required step="0.01">
                         </div>
-                        <div class="d-flex gap-2 mt-4">
-                            <button type="button" id="btn-close-modal" class="btn btn-secondary flex-grow-1">Cancelar</button>
-                            <button type="submit" class="btn btn-primary flex-grow-1">Salvar</button>
+                        
+                        <div class="d-flex gap-3 mt-4">
+                            <button type="button" id="btn-close-modal" class="btn btn-outline-secondary flex-grow-1 fw-bold py-2">Cancelar</button>
+                            <button type="submit" class="btn btn-success flex-grow-1 fw-bold py-2">Salvar</button>
                         </div>
                     </form>
                 </div>

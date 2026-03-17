@@ -64,35 +64,48 @@ body {
   margin-top: 10px;
 }
 
-/* Fundo escurecido */
+/* =========================================
+   MODAL DE EDIÇÃO (A CAMADA SUPREMA)
+   ========================================= */
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
-  display: none;
-  /* Escondido por padrão */
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.8); /* Fundo bem escuro */
+    backdrop-filter: blur(4px); /* Efeito de desfoque no fundo */
+    
+    /* A MARRETADA: 9999 garante que fica acima da gaveta (que é 1040) */
+    z-index: 9999 !important; 
+    
+    display: none; /* Padrão invisível */
+    justify-content: center;
+    align-items: center;
 }
 
-/* Caixa do Modal */
-.custom-modal {
-  background: #fff;
-  padding: 2rem;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 400px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  animation: fadeIn 0.3s ease;
-}
-
-/* Classe para mostrar o modal */
+/* Quando o JS abrir o modal, ele usa display: flex para centralizar a caixa */
 .modal-overlay.active {
-  display: flex;
+    display: flex !important;
+}
+
+.custom-modal {
+    background-color: #212529; /* Fundo escuro igual à gaveta */
+    color: #ffffff;
+    padding: 25px;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    border: 1px solid #444; /* Borda sutil */
+    
+    /* Pequena animação de entrada */
+    animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modalPop {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
 }
 
 @keyframes fadeIn {
@@ -109,7 +122,7 @@ body {
 
 /* Força as cores dentro do modal customizado */
 .custom-modal h3 {
-  color: #1a1a1a !important;
+  color: #ffffff !important;
   /* Quase preto */
   font-weight: bold;
   margin-bottom: 1.5rem;
@@ -347,4 +360,91 @@ body {
 /* Esconde a seta original enquanto carrega para não embolar */
 .is-loading #broker-select {
     background-image: none !important;
+}
+
+/* =========================================
+   GAVETA FLUTUANTE (BOTTOM DRAWER)
+   ========================================= */
+.bottom-drawer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #212529; /* O fundo escuro principal */
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    box-shadow: 0 -5px 30px rgba(0, 0, 0, 0.4);
+    z-index: 1040;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Altura fixa para evitar bugs de redimensionamento */
+    height: auto; 
+    max-height: 70vh; 
+}
+
+/* Esconde o conteúdo do form, deixando visível a barra + o botão verde (aprox. 85px) */
+.bottom-drawer.collapsed {
+    transform: translateY(calc(100% - 85px)); 
+}
+
+/* ÁREA DE CLIQUE FIXA NO TOPO */
+.drawer-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 12px 20px; 
+    display: flex;
+    flex-direction: column; /* Empilha a barrinha em cima e o botão embaixo */
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 10; 
+    background-color: #212529; /* Fundo sólido para ser o topo da gaveta */
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+}
+
+.drag-handle {
+    width: 45px;
+    height: 5px;
+    background-color: #6c757d;
+    border-radius: 10px;
+}
+
+/* O botão verde falso (Padrão: Escondido quando a gaveta está aberta) */
+.bottom-drawer .fake-add-btn {
+    display: none;
+    pointer-events: none; /* Transfere o clique direto para o drawer-header */
+}
+
+/* Quando a gaveta está recolhida, mostra o botão */
+.bottom-drawer.collapsed .fake-add-btn {
+    display: block;
+}
+
+/* Empurra o conteúdo real do form para baixo do cabeçalho */
+.drawer-content {
+    margin-top: 35px; /* Espaço exato da barrinha quando a gaveta está aberta */
+    padding: 10px 20px 30px 20px;
+    overflow-y: auto;
+    max-height: calc(70vh - 35px);
+}
+
+/* Fonte Responsiva: min, preferida, max */
+.title-responsive {
+    font-size: clamp(1.2rem, 4vw, 2rem);
+}
+
+.subtitle-responsive {
+    font-size: clamp(0.65rem, 1.5vw, 0.9rem);
+    max-width: 80%; /* Evita que o texto encoste nos botões no mobile */
+}
+
+/* Ajuste fino para os selects no mobile */
+@media (max-width: 576px) {
+    .form-select-sm {
+        font-size: 0.75rem !important;
+        padding-top: 0.4rem;
+        padding-bottom: 0.4rem;
+    }
 }
