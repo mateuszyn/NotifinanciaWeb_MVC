@@ -6,8 +6,8 @@ export const AssetView = {
         const BROKERS = {
             'Nubank': { color: '#820AD1', textColor: '#FFFFFF', url: 'https://play.google.com/store/apps/details?id=com.nu.production' },
             'Inter': { color: '#FF7A00', textColor: '#FFFFFF', url: 'https://play.google.com/store/apps/details?id=br.com.intermedium' },
-            'XP': { color: '#212529', textColor: '#FFFFFF', url: 'https://play.google.com/store/apps/details?id=br.com.xp.investimentos' },
-            'Rico': { color: '#005AAA', textColor: '#FF8A00', url: 'https://play.google.com/store/apps/details?id=com.rico.fox' }
+            'XP': { color: '#212529', textColor: '#FFFFFF', url: 'https://play.google.com/store/apps/details?id=br.com.xp.carteira' },
+            'Rico': { color: '#005AAA', textColor: '#FF8A00', url: 'https://play.google.com/store/apps/details?id=br.com.rico.mobile' }
         };
 
         const currentBroker = user.preferred_broker || 'Nubank';

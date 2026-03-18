@@ -78,7 +78,6 @@ export const AssetController = {
         });
 
         // --- 2. SELETOR DE CORRETORA (COM FEEDBACK) ---
-        // --- 2. SELETOR DE CORRETORA (ESTRUTURA LIMPA) ---
         const brokerSelect = document.querySelector('#broker-select');
         brokerSelect?.addEventListener('change', async (e) => {
             const newBroker = e.target.value;
