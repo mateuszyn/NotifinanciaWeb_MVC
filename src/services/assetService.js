@@ -20,7 +20,7 @@ export const AssetService = {
         try {
             const response = await fetch(url);
             const data = await response.json();
-            return data.stocks ? data.stocks.map(s => s.stock) : [];
+            return data.slice(0, 5);
         } catch (error) {
             console.error('Erro ao buscar sugestões:', error);
             return [];
