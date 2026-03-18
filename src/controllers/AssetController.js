@@ -151,13 +151,31 @@ export const AssetController = {
         const datalist = document.querySelector('#ticker-suggestions');
 
         tickerInput?.addEventListener('input', async (e) => {
-            const query = e.target.value.toUpperCase();
+            const query = e.target.value.toUpperCase().trim();
+            
+            // 1. Só busca se tiver 2 ou mais letras
             if (query.length >= 2) {
-                const suggestions = await AssetService.getTickerSuggestions(query);
-                if (datalist) {
-                    datalist.innerHTML = suggestions
-                        .map(t => `<option value="${t}">`)
-                        .join('');
+                try {
+                    // Adicione um log para ver se a API está respondendo fora do Chrome
+                    console.log("Buscando sugestões para:", query);
+                    
+                    const suggestions = await AssetService.getTickerSuggestions(query);
+                    
+                    if (datalist && suggestions.length > 0) {
+                        // Limpa e reconstrói para forçar o Safari/Firefox a notar a mudança
+                        datalist.innerHTML = ''; 
+                        const fragment = document.createDocumentFragment();
+                        
+                        suggestions.forEach(t => {
+                            const option = document.createElement('option');
+                            option.value = t;
+                            fragment.appendChild(option);
+                        });
+                        
+                        datalist.appendChild(fragment);
+                    }
+                } catch (err) {
+                    console.error("Erro nas sugestões:", err);
                 }
             }
         });
