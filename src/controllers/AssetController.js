@@ -196,20 +196,38 @@ export const AssetController = {
             submitBtn.disabled = true;
 
             try {
+                // 1. Validação de Duplicidade Local
+                // Buscamos os ativos atuais para comparar
+                const currentAssets = await AssetService.getAssets();
+                const alreadyExists = currentAssets.some(asset => asset.ticker === tickerValue);
+
+                if (alreadyExists) {
+                    alert(`O ativo ${tickerValue} já está cadastrado na sua carteira. Edite o existente para alterar a quantidade ou preço médio.`);
+                    return; // Interrompe a execução aqui
+                }
+
+                // 2. Validação de Existência do Ticker (API)
                 const isValid = await AssetService.validateTicker(tickerValue);
                 if (!isValid) {
                     alert(`O ticker "${tickerValue}" não foi encontrado.`);
                     return;
                 }
+
                 const newAsset = {
                     ticker: tickerValue,
                     quantity: Number(document.querySelector('#quantity').value),
                     averagePrice: parseFloat(document.querySelector('#averagePrice').value)
                 };
+
                 await AssetService.addAsset(newAsset);
                 form.reset();
+                
+                // Fecha a gaveta após adicionar (opcional, mas melhora o UX)
+                document.querySelector('#add-asset-drawer')?.classList.add('collapsed');
+                
                 await this.init();
             } catch (error) {
+                console.error(error);
                 alert('Erro ao processar sua solicitação.');
             } finally {
                 submitBtn.innerText = originalText;

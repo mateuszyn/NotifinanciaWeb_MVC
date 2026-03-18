@@ -359,88 +359,167 @@ body {
 }
 
 /* =========================================
-   GAVETA FLUTUANTE (BOTTOM DRAWER)
+   GAVETA FLUTUANTE (BOTTOM DRAWER) - CORRIGIDA
    ========================================= */
 .bottom-drawer {
     position: fixed;
     bottom: 0;
-    left: 0;
+    left: 50%;
+    transform: translateX(-50%); 
+    
     width: 100%;
-    background-color: #212529; /* O fundo escuro principal */
+    max-width: 1320px; 
+    padding: 0 15px;
+
+    background-color: #212529;
     border-top-left-radius: 24px;
     border-top-right-radius: 24px;
     box-shadow: 0 -5px 30px rgba(0, 0, 0, 0.4);
     z-index: 1040;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    /* Altura fixa para evitar bugs de redimensionamento */
-    height: auto; 
-    max-height: 70vh; 
+    height: auto;
+    /* Reduzimos a altura máxima para não cobrir a tela no mobile */
+    max-height: 45vh; 
 }
 
-/* Esconde o conteúdo do form, deixando visível a barra + o botão verde (aprox. 85px) */
 .bottom-drawer.collapsed {
-    transform: translateY(calc(100% - 85px)); 
+    /* Ajuste para o botão verde ficar visível no repouso */
+    transform: translate(-50%, calc(100% - 75px)); 
 }
 
-/* ÁREA DE CLIQUE FIXA NO TOPO */
 .drawer-header {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
-    padding: 12px 20px; 
+    padding: 10px 20px; 
     display: flex;
-    flex-direction: column; /* Empilha a barrinha em cima e o botão embaixo */
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     cursor: pointer;
     z-index: 10; 
-    background-color: #212529; /* Fundo sólido para ser o topo da gaveta */
+    background-color: #212529;
     border-top-left-radius: 24px;
     border-top-right-radius: 24px;
 }
 
 .drag-handle {
-    width: 45px;
-    height: 5px;
-    background-color: #6c757d;
+    width: 40px;
+    height: 4px;
+    background-color: #495057;
     border-radius: 10px;
+    margin-bottom: 5px;
 }
 
-/* O botão verde falso (Padrão: Escondido quando a gaveta está aberta) */
 .bottom-drawer .fake-add-btn {
     display: none;
-    pointer-events: none; /* Transfere o clique direto para o drawer-header */
+    font-size: 0.85rem !important;
 }
 
-/* Quando a gaveta está recolhida, mostra o botão */
 .bottom-drawer.collapsed .fake-add-btn {
     display: block;
 }
 
-/* Empurra o conteúdo real do form para baixo do cabeçalho */
+/* CONTEÚDO DO FORMULÁRIO (COMPACTADO) */
 .drawer-content {
-    margin-top: 35px; /* Espaço exato da barrinha quando a gaveta está aberta */
-    padding: 10px 20px 30px 20px;
-    overflow-y: auto;
-    max-height: calc(70vh - 35px);
+    margin-top: 25px; 
+    padding: 10px 15px 40px 15px !important; /* Aumentamos para 40px no fundo */
+    overflow-y: visible;
 }
 
-/* Fonte Responsiva: min, preferida, max */
-.title-responsive {
-    font-size: clamp(1.2rem, 4vw, 2rem);
+/* Ajuste dos inputs dentro da gaveta */
+.form-control-sm {
+    height: 34px !important;
+    font-size: 0.85rem !important;
+    border-radius: 8px !important;
 }
 
-.subtitle-responsive {
-    font-size: clamp(0.65rem, 1.5vw, 0.9rem);
-    max-width: 80%; /* Evita que o texto encoste nos botões no mobile */
+label.small {
+    font-size: 0.7rem !important;
+    margin-bottom: 2px !important;
+    color: #adb5bd !important;
 }
 
-/* Ajuste fino para os selects no mobile */
+/* === AJUSTES DE RESPONSIVIDADE (MOBILE) === */
+@media (max-width: 991px) {
+    header {
+        padding-top: 8px !important;
+        padding-bottom: 8px !important;
+    }
+
+    .header-container {
+        gap: 8px !important;
+    }
+
+    .actions-container {
+        position: absolute;
+        top: 12px;
+        right: 15px;
+        width: auto;
+        z-index: 100;
+    }
+
+    /* Força a centralização real do texto da marca */
+    .header-brand {
+        width: 100%;
+        text-align: center;
+        margin-top: 2px;
+    }
+
+    /* Ajuste para a gaveta ocupar 100% da largura no celular */
+    .bottom-drawer {
+        width: 100%;
+        max-width: 100%;
+        padding: 0;
+    }
+}
+
+/* Garante que o último card da lista não fique escondido atrás da gaveta */
+.container.mt-4 {
+    margin-bottom: 140px !important; 
+}
+
 @media (max-width: 576px) {
     .form-select-sm {
         font-size: 0.75rem !important;
-        padding-top: 0.4rem;
-        padding-bottom: 0.4rem;
+    }
+    
+    /* Ajuste específico para o botão OK lateral */
+    #form-asset button[type="submit"] {
+        height: 40px !important;
+        font-size: 0.75rem !important;
     }
 }
+
+/* Botões de atalho ultra-compactos */
+.btn-xs {
+    height: 18px;
+    line-height: 1;
+    color: #adb5bd;
+    border-radius: 4px;
+}
+
+.btn-xs:hover {
+    background-color: #343a40;
+    color: #fff;
+}
+
+/* Ajuste na margem da gaveta para comportar essa linhazinha extra */
+.drawer-content {
+    padding-bottom: 0px !important;
+}
+
+/* Garante que o input de texto dentro do grupo tenha prioridade de espaço */
+.input-group > input[type="number"] {
+    min-width: 60px !important; /* Tamanho mínimo para não sumir */
+    flex: 2 !important; 
+}
+
+.input-group > .qty-btn {
+    flex: 1 !important;
+    padding-left: 5px !important;
+    padding-right: 5px !important;
+    font-size: 0.7rem !important;
+}
+
