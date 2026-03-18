@@ -5,7 +5,6 @@ export const AddAssetView = {
         container.innerHTML = `
             <form id="form-asset" class="mt-2">
                 <div class="row g-2 align-items-end">
-                    // Dentro do innerHTML do AddAssetView
                     <div class="col-4 col-md-3 position-relative"> <label for="ticker" class="small text-secondary fw-bold mb-1">Ticker</label>
                         <input type="text" id="ticker" autocomplete="off" 
                             class="form-control bg-black text-white border-secondary form-control-sm text-uppercase" 
