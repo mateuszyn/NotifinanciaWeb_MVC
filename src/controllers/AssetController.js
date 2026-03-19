@@ -148,50 +148,17 @@ export const AssetController = {
 
         // --- RECOMENDAÇÃO DE TICKERS ---
         const tickerInput = document.querySelector('#ticker');
-        const resultsBox = document.querySelector('#ticker-results');
+        const datalist = document.querySelector('#ticker-suggestions');
 
         tickerInput?.addEventListener('input', async (e) => {
-            const query = e.target.value.toUpperCase().trim();
-            
-            if (query.length < 2) {
-                resultsBox.classList.add('d-none');
-                return;
-            }
-
-            try {
+            const query = e.target.value.toUpperCase();
+            if (query.length >= 2) {
                 const suggestions = await AssetService.getTickerSuggestions(query);
-                
-                // Aplicamos o limite de 5 aqui também, por segurança
-                const limitedSuggestions = suggestions.slice(0, 5);
-
-                if (limitedSuggestions.length > 0) {
-                    resultsBox.innerHTML = limitedSuggestions
-                        .map(t => `<div class="suggestion-item">${t}</div>`)
+                if (datalist) {
+                    datalist.innerHTML = suggestions
+                        .map(t => `<option value="${t}">`)
                         .join('');
-                    resultsBox.classList.remove('d-none');
-                } else {
-                    resultsBox.classList.add('d-none');
                 }
-            } catch (err) {
-                resultsBox.classList.add('d-none');
-            }
-        });
-
-        // Lógica para quando o usuário clica na sugestão
-        resultsBox?.addEventListener('click', (e) => {
-            if (e.target.classList.contains('suggestion-item')) {
-                tickerInput.value = e.target.innerText;
-                resultsBox.classList.add('d-none');
-                tickerInput.focus();
-                // Opcional: disparar o evento de 'blur' manualmente para buscar o preço
-                tickerInput.dispatchEvent(new Event('blur'));
-            }
-        });
-
-        // Fecha a lista se clicar fora
-        document.addEventListener('click', (e) => {
-            if (!tickerInput.contains(e.target) && !resultsBox.contains(e.target)) {
-                resultsBox.classList.add('d-none');
             }
         });
 

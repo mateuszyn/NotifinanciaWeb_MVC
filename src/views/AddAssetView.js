@@ -5,12 +5,12 @@ export const AddAssetView = {
         container.innerHTML = `
             <form id="form-asset" class="mt-2">
                 <div class="row g-2 align-items-end">
-                    <div class="col-4 col-md-3 position-relative"> <label for="ticker" class="small text-secondary fw-bold mb-1">Ticker</label>
-                        <input type="text" id="ticker" autocomplete="off" 
-                            class="form-control bg-black text-white border-secondary form-control-sm text-uppercase" 
-                            placeholder="EX: PETR4" required>
-                        
-                        <div id="ticker-results" class="suggestion-box d-none"></div>
+                    <div class="col-4 col-md-3">
+                        <label for="ticker" class="small text-secondary fw-bold mb-1">Ticker</label>
+                        <input type="text" id="ticker" list="ticker-suggestions" 
+                               class="form-control bg-black text-white border-secondary form-control-sm text-uppercase" 
+                               placeholder="EX: PETR4" required>
+                        <datalist id="ticker-suggestions"></datalist>
                     </div>
 
                     <div class="col-8 col-md-4">
