@@ -1,278 +1,49 @@
+/* =========================================
+   1. VARIÁVEIS E BASE
+   ========================================= */
 :root {
-  --bg-dark: #0f111a;
-  --card-bg: #1a1d29;
-  --text-main: #ffffff;
-  --accent-blue: #007bff;
-  --status-active: #28a745;
+    --bg-dark: #0f111a;
+    --card-bg: #1a1d29;
+    --modal-bg: #212529;
+    --text-main: #ffffff;
+    --text-muted: #888888;
+    --accent-blue: #007bff;
+    --status-active: #28a745;
+    --profit-pos: #2ecc71;
+    --profit-neg: #e74c3c;
 }
 
 body {
-  background-color: var(--bg-dark);
-  color: var(--text-main);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-.dashboard-header {
-  background-color: var(--card-bg);
-  padding: 1rem 2rem;
-  border-bottom: 1px solid #333;
-  margin-bottom: 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* Estilo do Card baseado no protótipo AppScript */
-.asset-card {
-  background-color: var(--card-bg);
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  border-left: 5px solid var(--accent-blue);
-  transition: transform 0.2s;
-}
-
-.asset-card:hover {
-  transform: translateY(-5px);
-}
-
-.badge-ativo {
-  background-color: rgba(40, 167, 69, 0.2);
-  color: var(--status-active);
-  font-size: 0.75rem;
-  padding: 4px 8px;
-  border-radius: 4px;
-}
-
-.price-label {
-  font-size: 0.7rem;
-  color: #888;
-  text-transform: uppercase;
-  margin-bottom: 0;
-}
-
-.price-value {
-  font-size: 1.1rem;
-  font-weight: bold;
-}
-
-.btn-detail {
-  background-color: transparent;
-  border: 1px solid #444;
-  color: #fff;
-  width: 100%;
-  margin-top: 10px;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    margin-bottom: 140px; /* Espaço para a gaveta não cobrir os cards */
 }
 
 /* =========================================
-   MODAL DE EDIÇÃO (A CAMADA SUPREMA)
+   2. HEADER E CONTROLES (TOPO)
    ========================================= */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgba(0, 0, 0, 0.8); /* Fundo bem escuro */
-    backdrop-filter: blur(4px); /* Efeito de desfoque no fundo */
-    
-    /* A MARRETADA: 9999 garante que fica acima da gaveta (que é 1040) */
-    z-index: 9999 !important; 
-    
-    display: none; /* Padrão invisível */
-    justify-content: center;
-    align-items: center;
-}
-
-/* Quando o JS abrir o modal, ele usa display: flex para centralizar a caixa */
-.modal-overlay.active {
-    display: flex !important;
-}
-
-.custom-modal {
-    background-color: #212529; /* Fundo escuro igual à gaveta */
-    color: #ffffff;
-    padding: 25px;
-    border-radius: 16px;
-    width: 90%;
-    max-width: 400px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-    border: 1px solid #444; /* Borda sutil */
-    
-    /* Pequena animação de entrada */
-    animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes modalPop {
-    0% { transform: scale(0.8); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Força as cores dentro do modal customizado */
-.custom-modal h3 {
-  color: #ffffff !important;
-  /* Quase preto */
-  font-weight: bold;
-  margin-bottom: 1.5rem;
-}
-
-.custom-modal label {
-  color: #444 !important;
-  /* Cinza escuro */
-  display: block;
-  margin-bottom: 0.5rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.custom-modal .form-control {
-  color: #000 !important;
-  /* Texto que o usuário digita */
-  background-color: #f8f9fa !important;
-  border: 1px solid #ddd;
-}
-
-/* Deixa os labels da barra de adicionar bem visíveis */
-.fixed-bottom label {
-    color: #adb5bd !important; /* Um cinza claro/médio bem elegante */
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-/* Ajuste opcional: deixar o placeholder (aquele texto de exemplo dentro do input) mais claro */
-.fixed-bottom input::placeholder {
-    color: #6c757d !important;
-}
-
-/* Cores para os Textos de Porcentagem */
-.text-profit-pos { color: #2ecc71 !important; } /* Verde vivo */
-.text-profit-neg { color: #e74c3c !important; } /* Vermelho vivo */
-
-/* Lógica de Bordas para o asset-card */
-.border-profit-viva-pos { border-left: 6px solid #145a32 !important; }   /* Verde Escuro */
-.border-profit-dia-neg { border-left: 6px solid #2ecc71 !important; }    /* Verde Claro */
-.border-neutral-portfolio { border-left: 6px solid #0d6efd !important; } /* Azul (P.M = 0) */
-.border-loss-dia-pos { border-left: 6px solid #f1948a !important; }     /* Vermelho Claro */
-.border-loss-viva-neg { border-left: 6px solid #922b21 !important; }    /* Vermelho Escuro */
-
-/* Ajuste fino no card para a borda lateral brilhar */
-.asset-card {
-    transition: transform 0.2s ease, border-color 0.3s ease;
-    border: 1px solid #333; /* Borda padrão suave */
-}
-
-/* Botão de Adicionar com Verde de Confiança */
-.btn-success-custom {
-    background-color: #2ecc71 !important;
-    border-color: #2ecc71 !important;
-    color: #ffffff !important; /* Texto preto para melhor contraste no verde claro */
-    transition: all 0.3s ease;
-}
-
-.btn-success-custom:hover {
-    background-color: #27ae60 !important; /* Um tom levemente mais sóbrio ao passar o mouse */
-    border-color: #27ae60 !important;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
-}
-
-.login-wrapper {
-    min-height: 100vh;
-    background-color: #121212; /* Fundo bem escuro */
+.dashboard-header {
+    background-color: var(--card-bg);
+    padding: 1rem 2rem;
+    border-bottom: 1px solid #333;
     display: flex;
+    justify-content: space-between;
     align-items: center;
 }
 
-.login-card {
-    background-color: #212529;
-    padding: 40px;
-    border-radius: 24px;
-    border: 1px solid #333;
+/* Títulos e Subtítulos */
+.title-responsive {
+    font-size: clamp(1.2rem, 5vw, 1.8rem);
+    line-height: 1;
 }
 
-.btn-google-login {
-    background-color: #ffffff;
-    color: #000000;
-    border-radius: 12px;
-    transition: all 0.3s ease;
+.subtitle-responsive {
+    font-size: clamp(0.6rem, 3vw, 0.85rem);
+    text-align: inherit;
 }
 
-.btn-google-login:hover {
-    background-color: #f1f1f1;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(255,255,255,0.1);
-}
-
-/* Responsividade de fontes para a Landing Page */
-@media (max-width: 768px) {
-    .display-4 {
-        font-size: 2.2rem;
-    }
-}
-
-#btn-toggle-notif {
-    cursor: pointer;
-    transition: transform 0.2s ease;
-}
-
-#btn-toggle-notif:hover {
-    transform: scale(1.1); /* Dá um leve zoom ao passar o mouse */
-}
-
-/* Animação de balanço */
-@keyframes bell-shake {
-  0% { transform: rotate(0); }
-  15% { transform: rotate(15deg); }
-  30% { transform: rotate(-15deg); }
-  45% { transform: rotate(10deg); }
-  60% { transform: rotate(-10deg); }
-  75% { transform: rotate(5deg); }
-  85% { transform: rotate(-5deg); }
-  100% { transform: rotate(0); }
-}
-
-/* Classe aplicada durante o clique */
-.bell-animating {
-  animation: bell-shake 0.5s ease-in-out;
-  opacity: 0.6;
-  pointer-events: none; /* Evita cliques duplos durante a animação */
-}
-
-#btn-toggle-notif i {
-  display: inline-block; /* Necessário para a rotação funcionar */
-  transition: all 0.3s ease;
-}
-/* Container do seletor para garantir alinhamento */
-.sort-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-    margin-right: 25px;
-}
-
-/* Container para agrupar as funções no centro */
-.header-controls {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    background: #f1f3f5;
-    padding: 5px 15px;
-    border-radius: 50px; /* Estilo "pílula" centralizada */
-}
-
-/* Estilização Geral dos Selects */
+/* Estilização dos Selects (Ordenação e Corretora) */
 #sort-select, #broker-select {
     appearance: none;
     -webkit-appearance: none;
@@ -286,122 +57,132 @@ body {
     background-repeat: no-repeat;
     background-position: right 12px center;
     background-size: 12px;
-    min-width: 160px; /* Garante que não fique um quadrado pequeno */
 }
 
-/* Seta de Dropdown Customizada */
 #sort-select {
     background-color: #ffffff;
     color: #444;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3E%3C/svg%3E");
 }
 
-#broker-select {
-    border: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='white' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3E%3C/svg%3E");
-}
-
-#sort-select:hover, #broker-select:hover {
-    filter: brightness(0.95);
-    transform: translateY(-1px);
-}
-
-/* Spinner Animado */
-.loader-spinner {
-    width: 18px;
-    height: 18px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: #fff;
-    animation: spin 0.8s linear infinite;
+/* Botão de Notificação (Sininho) */
+#btn-toggle-notif i {
     display: inline-block;
+    transition: all 0.3s ease;
 }
 
-@keyframes spin {
-    to { transform: rotate(360deg); }
+#btn-toggle-notif:hover { transform: scale(1.1); }
+
+@keyframes bell-shake {
+    0% { transform: rotate(0); }
+    15% { transform: rotate(15deg); }
+    30% { transform: rotate(-15deg); }
+    100% { transform: rotate(0); }
 }
 
-/* Classe para o select quando estiver carregando */
-.select-loading {
-    opacity: 0.7;
-    cursor: wait !important;
-}
-
-/* Container para o select do broker */
-.broker-container {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-}
-
-/* Spinner dentro do seletor */
-.loader-spinner-inner {
-    width: 14px;
-    height: 14px;
-    border: 2px solid rgba(0, 0, 0, 0.1);
-    border-radius: 50%;
-    border-top-color: currentColor; /* Segue a cor do texto do broker */
-    animation: spin 0.8s linear infinite;
-    position: absolute;
-    right: 35px; /* Fica ao lado da setinha do dropdown */
-    pointer-events: none; /* Não atrapalha o clique */
-    display: none; /* Escondido por padrão */
-}
-
-/* Quando estiver carregando, mostramos o spinner */
-.is-loading .loader-spinner-inner {
-    display: block;
-}
-
-/* Esconde a seta original enquanto carrega para não embolar */
-.is-loading #broker-select {
-    background-image: none !important;
+.bell-animating {
+    animation: bell-shake 0.5s ease-in-out;
+    opacity: 0.6;
+    pointer-events: none;
 }
 
 /* =========================================
-   GAVETA FLUTUANTE (BOTTOM DRAWER) - CORRIGIDA
+   3. CARDS DE ATIVOS (LISTAGEM)
+   ========================================= */
+.asset-card {
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid #333;
+    transition: transform 0.2s ease, border-color 0.3s ease;
+}
+
+.asset-card:hover { transform: translateY(-5px); }
+
+/* Indicadores de Lucro/Prejuízo */
+.text-profit-pos { color: var(--profit-pos) !important; }
+.text-profit-neg { color: var(--profit-neg) !important; }
+
+/* Bordas Laterais Dinâmicas (Status da Carteira) */
+.border-profit-viva-pos { border-left: 6px solid #145a32 !important; } /* Verde Escuro */
+.border-profit-dia-neg { border-left: 6px solid var(--profit-pos) !important; } /* Verde Claro */
+.border-neutral-portfolio { border-left: 6px solid var(--accent-blue) !important; } /* Azul */
+.border-loss-dia-pos { border-left: 6px solid #f1948a !important; } /* Vermelho Claro */
+.border-loss-viva-neg { border-left: 6px solid #922b21 !important; } /* Vermelho Escuro */
+
+.price-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.price-value {
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+/* =========================================
+   4. MODAL DE EDIÇÃO (OVERLAY)
+   ========================================= */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+    z-index: 9999 !important;
+    display: none;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-overlay.active { display: flex !important; }
+
+.custom-modal {
+    background-color: var(--modal-bg);
+    padding: 25px;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 400px;
+    border: 1px solid #444;
+    animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modalPop {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* =========================================
+   5. GAVETA DE ADICIONAR (BOTTOM DRAWER)
    ========================================= */
 .bottom-drawer {
     position: fixed;
     bottom: 0;
     left: 50%;
-    transform: translateX(-50%); 
-    
+    transform: translateX(-50%);
     width: 100%;
-    max-width: 1320px; 
-    padding: 0 15px;
-
-    background-color: #212529;
+    max-width: 1320px;
+    background-color: var(--modal-bg);
     border-top-left-radius: 24px;
     border-top-right-radius: 24px;
     box-shadow: 0 -5px 30px rgba(0, 0, 0, 0.4);
     z-index: 1040;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    height: auto;
-    /* Reduzimos a altura máxima para não cobrir a tela no mobile */
-    max-height: 45vh; 
 }
 
 .bottom-drawer.collapsed {
-    /* Ajuste para o botão verde ficar visível no repouso */
-    transform: translate(-50%, calc(100% - 75px)); 
+    transform: translate(-50%, calc(100% - 75px));
 }
 
 .drawer-header {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    padding: 10px 20px; 
+    padding: 10px 20px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
     cursor: pointer;
-    z-index: 10; 
-    background-color: #212529;
-    border-top-left-radius: 24px;
-    border-top-right-radius: 24px;
 }
 
 .drag-handle {
@@ -412,114 +193,61 @@ body {
     margin-bottom: 5px;
 }
 
-.bottom-drawer .fake-add-btn {
-    display: none;
-    font-size: 0.85rem !important;
-}
-
-.bottom-drawer.collapsed .fake-add-btn {
-    display: block;
-}
-
-/* CONTEÚDO DO FORMULÁRIO (COMPACTADO) */
+/* Conteúdo interno da gaveta */
 .drawer-content {
-    margin-top: 25px; 
-    padding: 10px 15px 40px 15px !important; /* Aumentamos para 40px no fundo */
-    overflow-y: visible;
+    padding: 10px 15px 40px 15px;
 }
 
-/* Ajuste dos inputs dentro da gaveta */
 .form-control-sm {
     height: 34px !important;
     font-size: 0.85rem !important;
-    border-radius: 8px !important;
 }
 
-label.small {
+/* Atalhos de Quantidade (+1, +10, +100) */
+.input-group > .qty-btn {
+    flex: 1 !important;
     font-size: 0.7rem !important;
-    margin-bottom: 2px !important;
-    color: #adb5bd !important;
+    background-color: #1a1d20;
+    border: 1px solid #333;
+    color: #adb5bd;
 }
 
-/* === AJUSTES DE RESPONSIVIDADE (MOBILE) === */
-@media (max-width: 991px) {
-    header {
-        padding-top: 8px !important;
-        padding-bottom: 8px !important;
-    }
+/* =========================================
+   6. TELAS DE ACESSO (LOGIN / LANDING)
+   ========================================= */
+.login-card {
+    background-color: var(--modal-bg);
+    padding: 40px;
+    border-radius: 24px;
+    border: 1px solid #333;
+}
 
-    .header-container {
-        gap: 8px !important;
+.btn-google-login {
+    background-color: #ffffff;
+    color: #000000;
+    border-radius: 12px;
+    font-weight: bold;
+}
+
+/* =========================================
+   7. RESPONSIVIDADE (MOBILE)
+   ========================================= */
+@media (max-width: 991px) {
+    header { padding: 8px !important; }
+    
+    .header-brand {
+        width: 100%;
+        text-align: center;
     }
 
     .actions-container {
         position: absolute;
         top: 12px;
         right: 15px;
-        width: auto;
-        z-index: 100;
     }
 
-    /* Força a centralização real do texto da marca */
-    .header-brand {
-        width: 100%;
-        text-align: center;
-        margin-top: 2px;
-    }
-
-    /* Ajuste para a gaveta ocupar 100% da largura no celular */
     .bottom-drawer {
-        width: 100%;
         max-width: 100%;
-        padding: 0;
+        border-radius: 24px 24px 0 0;
     }
 }
-
-/* Garante que o último card da lista não fique escondido atrás da gaveta */
-.container.mt-4 {
-    margin-bottom: 140px !important; 
-}
-
-@media (max-width: 576px) {
-    .form-select-sm {
-        font-size: 0.75rem !important;
-    }
-    
-    /* Ajuste específico para o botão OK lateral */
-    #form-asset button[type="submit"] {
-        height: 40px !important;
-        font-size: 0.75rem !important;
-    }
-}
-
-/* Botões de atalho ultra-compactos */
-.btn-xs {
-    height: 18px;
-    line-height: 1;
-    color: #adb5bd;
-    border-radius: 4px;
-}
-
-.btn-xs:hover {
-    background-color: #343a40;
-    color: #fff;
-}
-
-/* Ajuste na margem da gaveta para comportar essa linhazinha extra */
-.drawer-content {
-    padding-bottom: 0px !important;
-}
-
-/* Garante que o input de texto dentro do grupo tenha prioridade de espaço */
-.input-group > input[type="number"] {
-    min-width: 60px !important; /* Tamanho mínimo para não sumir */
-    flex: 2 !important; 
-}
-
-.input-group > .qty-btn {
-    flex: 1 !important;
-    padding-left: 5px !important;
-    padding-right: 5px !important;
-    font-size: 0.7rem !important;
-}
-
