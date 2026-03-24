@@ -57,22 +57,25 @@ export const AssetService = {
     },
 
     // 2. ALTERADO: Mapeia cada ticker para um objeto com preço e variação
-    async getMarketPrices(tickers) {
-        if (tickers.length === 0) return {};
-        const tickersString = tickers.join(',');
-        const marketData = {};
+    async getMarketPrices(ticker) {
+        try {
+            // Em vez de chamar o fetch() direto na Brapi, chamamos a nossa Edge Function
+            const { data, error } = await supabase.functions.invoke('brapi-proxy', {
+                body: { 
+                    tickers: ticker 
+                    // No Nível 3, adicionaremos: modules: 'defaultKeyStatistics', dividends: 'true'
+                }
+            });
 
-        for (let index = 0; index < tickers.length; index++) {
-            const element = tickers[index];
-            const url = `https://brapi.dev/api/quote/${element}?token=${BRAPI_TOKEN}`;
-            const response = await fetch(url);
-            const data = await response.json();
-            marketData[element] = {
-                price: data.results?.[0]?.regularMarketPrice || 0,
-                changePercent: data.results?.[0]?.regularMarketChangePercent || 0
-            };
+            if (error) throw error;
+            
+            // Retorna a lista de resultados da Brapi (ou ajusta conforme a sua lógica atual espera)
+            return data; 
+
+        } catch (error) {
+            console.error('Erro ao buscar dados na Edge Function:', error);
+            return null;
         }
-        return marketData
     },
 
     async addAsset(asset) {
