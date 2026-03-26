@@ -8,7 +8,6 @@ export const AssetController = {
     async init() {
         const user = await AuthService.getUser();
 
-        // --- 'preferred_broker' no select ---
         const { data: profile } = await supabase
             .from('profiles')
             .select('notifications_enabled, sort_by, preferred_broker') 
@@ -20,12 +19,18 @@ export const AssetController = {
         user.preferred_broker = profile?.preferred_broker || 'Nubank'; 
 
         const userAssets = await AssetService.getAssets();
-        const tickers = userAssets.map(a => a.ticker);
-        const marketData = await AssetService.getMarketPrices(tickers);
 
-        let enrichedAssets = userAssets.map(asset => {
-            const live = marketData[asset.ticker] || { price: 0, changePercent: 0 };
-            const currentPrice = live.price;
+        // --- CORREÇÃO AQUI: BUSCA INDIVIDUAL PARA RESPEITAR O PLANO DA BRAPI ---
+        const enrichedAssets = await Promise.all(userAssets.map(async (asset) => {
+            // Chamamos o serviço para CADA ticker individualmente
+            const marketData = await AssetService.getMarketPrices(asset.ticker);
+            
+            // A Brapi retorna um array em 'results', pegamos o primeiro item
+            const live = marketData.results?.[0] || { regularMarketPrice: 0, regularMarketChangePercent: 0 };
+            
+            const currentPrice = live.regularMarketPrice || 0;
+            const dailyChange = live.regularMarketChangePercent || 0;
+
             const variacaoPM = asset.averagePrice > 0 
                 ? ((currentPrice / asset.averagePrice) - 1) * 100 
                 : 0;
@@ -33,15 +38,16 @@ export const AssetController = {
             return {
                 ...asset,
                 currentPrice,
-                dailyChange: live.changePercent,
-                variacaoPM: variacaoPM,
+                dailyChange,
+                variacaoPM,
                 totalValue: currentPrice * asset.quantity
             };
-        });
+        }));
 
-        enrichedAssets = this.sortAssets(enrichedAssets, user.sort_by);
+        // Ordenação e Renderização
+        const sortedAssets = this.sortAssets(enrichedAssets, user.sort_by);
 
-        AssetView.render(enrichedAssets, user);
+        AssetView.render(sortedAssets, user);
         AddAssetView.render();
 
         this.setupEventListeners();

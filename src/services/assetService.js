@@ -1,9 +1,8 @@
 import { supabase } from './supabaseClient.js';
 import { Asset } from '../models/Asset.js';
 
-const BRAPI_TOKEN = import.meta.env.VITE_BRAPI_TOKEN;
-
 export const AssetService = {
+    // Busca ativos no banco de dados
     async getAssets() {
         const { data, error } = await supabase.from('assets').select('*');
         if (error) return [];
@@ -14,12 +13,18 @@ export const AssetService = {
         });
     },
 
+    // 1. ATUALIZADO: Busca sugestões via Edge Function (Seguro)
     async getTickerSuggestions(query) {
         if (!query || query.length < 2) return [];
-        const url = `https://brapi.dev/api/quote/list?search=${query}&token=${BRAPI_TOKEN}`;
         try {
-            const response = await fetch(url);
-            const data = await response.json();
+            // Usamos a função proxy para buscar a lista de sugestões
+            // Nota: No futuro, podemos criar uma função específica 'brapi-list-proxy' no Supabase
+            // Por enquanto, vamos garantir que o token não vaze aqui.
+            const { data, error } = await supabase.functions.invoke('brapi-proxy', {
+                body: { search: query, endpoint: 'list' } 
+            });
+
+            if (error) throw error;
             return data.stocks ? data.stocks.map(s => s.stock) : [];
         } catch (error) {
             console.error('Erro ao buscar sugestões:', error);
@@ -27,12 +32,54 @@ export const AssetService = {
         }
     },
 
-    // 1. ALTERADO: Agora retorna um objeto { price, changePercent }
-    async getPrice(ticker) {
-        const url = `https://brapi.dev/api/quote/${ticker}?token=${BRAPI_TOKEN}`;
+    // 2. UNIFICADO: Agora todas as buscas de preço usam a Edge Function
+    async getMarketPrices(ticker) {
+        if (!ticker) return { results: [] };
+        
         try {
-            const response = await fetch(url);
-            const data = await response.json();
+            // BLINDAGEM: Se vier um array, pega o primeiro. Se vier objeto, tenta pegar a propriedade ticker. Senão, converte pra texto.
+            let tickerString = '';
+            if (Array.isArray(ticker)) {
+                tickerString = String(ticker[0] || ''); 
+            } else if (typeof ticker === 'object' && ticker.ticker) {
+                tickerString = String(ticker.ticker);
+            } else {
+                tickerString = String(ticker);
+            }
+
+            const cleanTicker = tickerString.toUpperCase().trim();
+
+            const { data, error } = await supabase.functions.invoke('brapi-proxy', {
+                body: { tickers: cleanTicker }
+            });
+
+            if (error || !data || !data.results) {
+                console.warn(`Aviso: Dados de ${cleanTicker} não retornaram.`);
+                return { results: [] }; 
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Erro na chamada da Edge Function:', error);
+            return { results: [] };
+        }
+    },
+
+    // 3. ATUALIZADO: Valida ticker usando a Edge Function
+    async validateTicker(ticker) {
+        if (!ticker) return false;
+        try {
+            const data = await this.getMarketPrices(ticker);
+            return data.results && data.results.length > 0 && data.results[0].symbol;
+        } catch (error) {
+            return false;
+        }
+    },
+
+    // 4. ATUALIZADO: getPrice agora utiliza a lógica segura
+    async getPrice(ticker) {
+        try {
+            const data = await this.getMarketPrices(ticker);
             const res = data.results?.[0];
             return {
                 price: res?.regularMarketPrice || 0,
@@ -43,46 +90,12 @@ export const AssetService = {
         }
     },
 
-    async validateTicker(ticker) {
-        if (!ticker) return false;
-        const url = `https://brapi.dev/api/quote/${ticker}?token=${BRAPI_TOKEN}`;
-        try {
-            const response = await fetch(url);
-            if (!response.ok) return false;
-            const data = await response.json();
-            return data.results && data.results.length > 0 && data.results[0].symbol;
-        } catch (error) {
-            return false;
-        }
-    },
-
-    // 2. ALTERADO: Mapeia cada ticker para um objeto com preço e variação
-    async getMarketPrices(ticker) {
-        try {
-            // Em vez de chamar o fetch() direto na Brapi, chamamos a nossa Edge Function
-            const { data, error } = await supabase.functions.invoke('brapi-proxy', {
-                body: { 
-                    tickers: ticker 
-                    // No Nível 3, adicionaremos: modules: 'defaultKeyStatistics', dividends: 'true'
-                }
-            });
-
-            if (error) throw error;
-            
-            // Retorna a lista de resultados da Brapi (ou ajusta conforme a sua lógica atual espera)
-            return data; 
-
-        } catch (error) {
-            console.error('Erro ao buscar dados na Edge Function:', error);
-            return null;
-        }
-    },
-
+    // Operações de Banco de Dados (Supabase + RLS garantem a segurança aqui)
     async addAsset(asset) {
         const { error } = await supabase
             .from('assets')
             .insert([{
-                ticker: asset.ticker,
+                ticker: asset.ticker.toUpperCase(),
                 quantity: asset.quantity,
                 average_price: asset.averagePrice
             }]);
