@@ -27,18 +27,23 @@ export const AssetView = {
             if (profitPct > 0) borderClass = dailyChange >= 0 ? 'border-profit-viva-pos' : 'border-profit-dia-neg';
             else if (profitPct < 0) borderClass = dailyChange >= 0 ? 'border-loss-dia-pos' : 'border-loss-viva-neg';
 
+            // Se for visitante, mostra uma tag "Exemplo". Se for usuário real, mostra Lixeira e Lápis.
+            const actionButtons = user.isGuest 
+                ? `<span class="badge bg-secondary">Dados de Exemplo</span>`
+                : `<button class="btn btn-link p-0 text-primary btn-edit" data-id="${asset.id}" data-ticker="${asset.ticker}" data-qty="${asset.quantity}" data-price="${asset.averagePrice}">
+                       <i class="bi bi-pencil-square fs-4"></i>
+                   </button>
+                   <button class="btn btn-link p-0 text-danger btn-delete" data-id="${asset.id}">
+                       <i class="bi bi-trash3 fs-4"></i>
+                   </button>`;
+
             return `
                 <div class="col-12 col-md-6 col-lg-4 mb-4">
                     <div class="asset-card ${borderClass}">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h4 class="m-0 fw-bold">${asset.ticker}</h4>
-                            <div class="d-flex gap-3">
-                                <button class="btn btn-link p-0 text-primary btn-edit" data-id="${asset.id}" data-ticker="${asset.ticker}" data-qty="${asset.quantity}" data-price="${asset.averagePrice}">
-                                    <i class="bi bi-pencil-square fs-4"></i>
-                                </button>
-                                <button class="btn btn-link p-0 text-danger btn-delete" data-id="${asset.id}">
-                                    <i class="bi bi-trash3 fs-4"></i>
-                                </button>
+                            <div class="d-flex gap-3 align-items-center">
+                                ${actionButtons}
                             </div>
                         </div>
                         <div class="row mb-3">
@@ -78,7 +83,7 @@ export const AssetView = {
                     </div>
 
                     <div class="d-flex flex-row gap-2 justify-content-center filter-container">
-                        <select id="sort-select" class="form-select bg-dark text-white border-secondary form-select-sm">
+                        <select id="sort-select" class="form-select bg-dark text-white border-secondary form-select-sm" ${user.isGuest ? 'disabled' : ''}>
                             <option value="pm_asc">P.M. (Menor %)</option>
                             <option value="pm_desc">P.M. (Maior %)</option>
                             <option value="name_asc">Nome (A-Z)</option>
@@ -86,7 +91,7 @@ export const AssetView = {
                         </select>
 
                         <select id="broker-select" class="form-select border-secondary form-select-sm" 
-                                style="background-color: ${brokerInfo.color}; color: ${brokerInfo.textColor}; font-weight: bold;">
+                                style="background-color: ${brokerInfo.color}; color: ${brokerInfo.textColor}; font-weight: bold;" ${user.isGuest ? 'disabled' : ''}>
                             <option value="Nubank" ${currentBroker === 'Nubank' ? 'selected' : ''}>Nubank</option>
                             <option value="Inter" ${currentBroker === 'Inter' ? 'selected' : ''}>Inter</option>
                             <option value="XP" ${currentBroker === 'XP' ? 'selected' : ''}>XP</option>
@@ -95,13 +100,17 @@ export const AssetView = {
                     </div>
 
                     <div class="d-flex align-items-center justify-content-center gap-3 actions-container">
-                        <button id="btn-toggle-notif" class="btn btn-link p-0 shadow-none border-0">
+                        <button id="btn-toggle-notif" class="btn btn-link p-0 shadow-none border-0" ${user.isGuest ? 'disabled' : ''}>
                             <i class="${bellIcon} fs-4"></i>
                         </button>
                         <span class="text-secondary d-none d-md-block small">
-                            Olá, <b class="text-white">${userName}</b>
+                            Olá, <b class="text-white">${user.isGuest ? 'Visitante' : userName}</b>
                         </span>
-                        <button id="btn-logout" class="btn btn-outline-danger btn-sm rounded-pill px-3">Sair</button>
+                        
+                        ${user.isGuest 
+                            ? `<button class="btn btn-success btn-sm rounded-pill px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#loginModal">Entrar</button>` 
+                            : `<button id="btn-logout" class="btn btn-outline-danger btn-sm rounded-pill px-3">Sair</button>`
+                        }
                     </div>
 
                 </div>
@@ -111,6 +120,7 @@ export const AssetView = {
                 <div class="row" id="asset-list">${cardsHtml}</div>
             </div>
 
+            ${user.isGuest ? '' : `
             <div id="add-asset-drawer" class="bottom-drawer collapsed"> 
                 <div class="drawer-header" id="drawer-toggle">
                     <div class="drag-handle"></div>
@@ -119,36 +129,34 @@ export const AssetView = {
                     </button>
                 </div>
                 <div class="drawer-content" id="form-container"></div>
-            </div>
+            </div>`}
 
-            ${this.renderUpdateModal()}
+            ${user.isGuest ? '' : this.renderUpdateModal()}
         `;
 
         // Lógica de Ordenação
         const sortSelect = document.querySelector('#sort-select');
         if (sortSelect && user.sort_by) sortSelect.value = user.sort_by;
 
-        // Lógica da Corretora (Visual e Dinâmica)
+        // Lógica da Corretora (Visual e Dinâmica) - Somente para usuários logados
         const brokerSelect = document.querySelector('#broker-select');
-        if (brokerSelect) {
+        if (brokerSelect && !user.isGuest) {
             brokerSelect.addEventListener('change', (e) => {
                 const selected = e.target.value;
                 const info = BROKERS[selected];
                 
-                // Aplica a cor instantaneamente no Select para feedback visual
                 brokerSelect.style.backgroundColor = info.color;
                 brokerSelect.style.color = info.textColor;
                 
-                // Dispara o evento personalizado que seu Controller deve ouvir para salvar no banco
                 brokerSelect.dispatchEvent(new CustomEvent('brokerChanged', { detail: selected }));
             });
         }
 
-        // Lógica da Gaveta
+        // Lógica da Gaveta - Somente para usuários logados
         const drawer = document.querySelector('#add-asset-drawer');
         const drawerHeader = document.querySelector('#drawer-toggle');
         
-        if (drawer && drawerHeader) {
+        if (drawer && drawerHeader && !user.isGuest) {
             drawerHeader.replaceWith(drawerHeader.cloneNode(true));
             const newDrawerHeader = document.querySelector('#drawer-toggle');
             newDrawerHeader.addEventListener('click', () => {

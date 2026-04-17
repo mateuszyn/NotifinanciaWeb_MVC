@@ -1,20 +1,51 @@
 import './assets/style.css';
 import { AuthService } from './services/authService.js';
 import { AssetController } from './controllers/AssetController.js';
-import { LoginView } from './views/LoginView.js';
+import { AssetView } from './views/AssetView.js';
 
 async function initApp() {
     const user = await AuthService.getUser();
 
     if (user) {
-        // Usuário logado: inicia o fluxo de ativos
+        // --- USUÁRIO LOGADO: Inicia o sistema real ---
+        const modalElement = document.getElementById('loginModal');
+        if (modalElement) {
+            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+            if (modalInstance) modalInstance.hide();
+        }
         AssetController.init();
     } else {
-        // Usuário deslogado: mostra tela de login
-        LoginView.render();
+        // --- VISITANTE: Mostra a vitrine de demonstração e o modal ---
         
-        // Adiciona o evento de clique ao botão que acabamos de renderizar
-        document.querySelector('#btn-login').addEventListener('click', () => {
+        // 1. Cria um usuário fictício
+        const demoUser = {
+            email: 'visitante@notifinancia',
+            isGuest: true, // Tag essencial para a View saber que é fake
+            preferred_broker: 'Nubank',
+            notifications_enabled: true
+        };
+
+        // 2. Cria ativos fictícios rentáveis e no prejuízo para mostrar as cores
+        const demoAssets = [
+            { id: 1, ticker: 'MXRF11', quantity: 150, averagePrice: 10.20, currentPrice: 10.55, variacaoPM: 3.43, dailyChange: 0.5 },
+            { id: 2, ticker: 'PETR4', quantity: 100, averagePrice: 38.50, currentPrice: 36.20, variacaoPM: -5.97, dailyChange: -1.2 },
+            { id: 3, ticker: 'KLBN4', quantity: 500, averagePrice: 4.10, currentPrice: 4.35, variacaoPM: 6.09, dailyChange: 1.1 }
+        ];
+
+        // 3. Renderiza a tela principal com os dados falsos
+        AssetView.render(demoAssets, demoUser);
+
+        // 4. Esconde a gaveta de "Novo Ativo" para não confundir o visitante
+        const drawer = document.getElementById('add-asset-drawer');
+        if (drawer) drawer.style.display = 'none';
+
+        // 5. Exibe o Modal de Login por cima do dashboard
+        const modalElement = document.getElementById('loginModal');
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+
+        // 6. Ativa o botão do Google
+        document.querySelector('#btn-login-google').addEventListener('click', () => {
             AuthService.signInWithGoogle();
         });
     }

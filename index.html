@@ -1,32 +1,38 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
-    <title>Notifinancia | Relatórios Diários de Investimentos B3 e FIIs</title>
-    <meta name="description" content="Acompanhe sua carteira de investimentos de forma inteligente. Receba relatórios diários via e-mail, alertas de preço médio e notificações personalizadas para ativos da B3 e FIIs.">
-    <meta name="keywords" content="investimentos, B3, FIIs, ações, dividendos, preço médio, relatórios financeiros, notificações de ativos, Notifinancia">
-    <meta name="author" content="Sertão Devs">
-
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://notifinancia.online/">
-    <meta property="og:title" content="Notifinancia | Seu portfólio no seu radar">
-    <meta property="og:description" content="Receba resumos diários da sua carteira e saiba quais ativos estão abaixo do seu preço médio em segundos.">
-    <meta property="og:image" content="https://notifinancia.online/og-image.png"> <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://notifinancia.online/">
-    <meta property="twitter:title" content="Notifinancia | Relatórios de Investimentos">
-    <meta property="twitter:description" content="Controle seus ativos B3 e FIIs com notificações inteligentes e análise de PM.">
-
+    <title>Notifinancia | Notificações Diárias Sobre Sua Carteira</title>
+    <meta name="description" content="Acompanhe sua carteira de investimentos B3 e FIIs de forma inteligente.">
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="manifest" href="/site.webmanifest">
   </head>
-  <body>
+  <body class="bg-dark text-light">
+    
     <div id="app"></div>
+
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border border-secondary shadow-lg">
+          <div class="modal-header border-bottom border-secondary">
+            <h5 class="modal-title fw-bold text-success" id="loginModalLabel">Notifinancia</h5>
+          </div>
+          <div class="modal-body text-center p-5">
+            <h3 class="fw-bold text-white mb-3">Relatórios Diários Sobre Sua Carteira!</h3>
+            <p class="text-secondary mb-4">Entre gratuitamente com o Google para gerenciar sua carteira real e receber notificações de Rentabilidade de seus ativos no e-mail (às 18h).</p>
+            
+            <button id="btn-login-google" class="btn btn-outline-light w-100 py-3 fw-bold d-flex align-items-center justify-content-center gap-2">
+              <i class="bi bi-google text-success fs-5"></i> Acessar com Google
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
