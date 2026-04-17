@@ -18,9 +18,7 @@ export const AssetService = {
         if (!query || query.length < 2) return [];
         try {
             // Usamos a função proxy para buscar a lista de sugestões
-            // Nota: No futuro, podemos criar uma função específica 'brapi-list-proxy' no Supabase
-            // Por enquanto, vamos garantir que o token não vaze aqui.
-            const { data, error } = await supabase.functions.invoke('brapi-proxy', {
+            const { data, error } = await supabase.functions.invoke('market-data', {
                 body: { search: query, endpoint: 'list' } 
             });
 
@@ -49,7 +47,7 @@ export const AssetService = {
 
             const cleanTicker = tickerString.toUpperCase().trim();
 
-            const { data, error } = await supabase.functions.invoke('brapi-proxy', {
+            const { data, error } = await supabase.functions.invoke('market-data', {
                 body: { tickers: cleanTicker }
             });
 
