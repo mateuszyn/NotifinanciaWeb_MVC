@@ -10,6 +10,11 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 
     if (user) {
         // --- USUÁRIO LOGADO: Inicia o sistema real ---
+
+        // 1. Esconde o rodapé de SEO para deixar o dashboard limpo
+        const seoFooter = document.getElementById('seo-footer');
+        if (seoFooter) seoFooter.style.display = 'none';
+        
         const modalElement = document.getElementById('loginModal');
         if (modalElement) {
             // Usa getOrCreateInstance para garantir que o modal feche sem erros

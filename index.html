@@ -4,16 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
-    <title>Notifinancia | Notificações Diárias Sobre Sua Carteira</title>
-    <meta name="description" content="Acompanhe sua carteira de investimentos B3 e FIIs de forma inteligente.">
-    <link rel="canonical" href="https://notifinancia.online/" />
+    <title>Notifinancia | Notificações Diárias Sobre Suas Ações</title>
+    <meta name="description" content="Acompanhe sua carteira de investimentos B3 e FIIs. Receba relatórios, alertas de preço médio e notificações com foco em dividendos e estratégia Barsi.">
     
+    <link rel="canonical" href="https://notifinancia.online/" />
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   </head>
-  <body class="bg-dark text-light">
+  <body class="bg-dark text-light d-flex flex-column min-vh-100">
     
-    <div id="app"></div>
+    <div id="app" class="flex-grow-1"></div>
+
+    <footer id="seo-footer" class="bg-dark text-center py-4 border-top border-secondary mt-auto">
+        <div class="container" style="opacity: 0.7;">
+            <p class="text-success fw-bold mb-1">Notifinancia - Notificações dos seus Investimentos</p>
+            <p class="text-secondary small mb-0">
+                Sua plataforma definitiva para controle de <strong>ações</strong> e <strong>FIIs</strong> na <strong>B3</strong>. 
+                Receba <strong>relatórios</strong> diários, acompanhe seus <strong>dividendos</strong> e configure 
+                <strong>alertas</strong> de <strong>preço médio</strong>. Desenvolvido para maximizar seus aportes usando a estratégia <strong>Barsi</strong> e <strong>notificações</strong> inteligentes.
+            </p>
+        </div>
+    </footer>
 
     <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
       <div class="modal-dialog modal-dialog-centered">
@@ -22,8 +34,9 @@
             <h5 class="modal-title fw-bold text-success" id="loginModalLabel">Notifinancia</h5>
           </div>
           <div class="modal-body text-center p-5">
-            <h3 class="fw-bold text-white mb-3">Relatórios Diários Sobre Sua Carteira!</h3>
-            <p class="text-secondary mb-4">Entre gratuitamente com o Google para gerenciar sua carteira real e receber notificações de Rentabilidade de seus ativos no e-mail (às 18h).</p>
+            <h3 class="fw-bold text-white mb-3">Notificações do Seu portfólio.</h3>
+            
+            <p class="text-secondary mb-4">Gerencie sua carteira real de <strong>Ações e FIIs</strong>. Acesse gratuitamente para receber <strong>alertas de Preço Médio</strong> e <strong>relatórios de dividendos</strong> no seu e-mail.</p>
             
             <button id="btn-login-google" class="btn btn-outline-light w-100 py-3 fw-bold d-flex align-items-center justify-content-center gap-2">
               <i class="bi bi-google text-success fs-5"></i> Acessar com Google
