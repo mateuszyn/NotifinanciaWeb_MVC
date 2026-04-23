@@ -3,6 +3,7 @@ import { AssetView } from '../views/AssetView.js';
 import { AddAssetView } from '../views/AddAssetView.js';
 import { AuthService } from '../services/authService.js';
 import { supabase } from '../services/supabaseClient.js';
+import { TickerDictionary } from '../models/TickerDictionary.js';
 
 export const AssetController = {
     async init() {
@@ -153,20 +154,59 @@ export const AssetController = {
         });
 
         // --- RECOMENDAÇÃO DE TICKERS ---
-        const tickerInput = document.querySelector('#ticker');
-        const datalist = document.querySelector('#ticker-suggestions');
+        const tickerInput = document.querySelector('#asset-ticker');
+        const suggestionsBox = document.querySelector('#ticker-suggestions');
 
-        tickerInput?.addEventListener('input', async (e) => {
-            const query = e.target.value.toUpperCase();
-            if (query.length >= 2) {
-                const suggestions = await AssetService.getTickerSuggestions(query);
-                if (datalist) {
-                    datalist.innerHTML = suggestions
-                        .map(t => `<option value="${t}">`)
-                        .join('');
+        if (tickerInput && suggestionsBox) {
+            // Escuta a digitação
+            tickerInput.addEventListener('input', (e) => {
+                const query = e.target.value;
+                const results = TickerDictionary.search(query);
+
+                if (results.length > 0 && query.length >= 2) {
+                    // Monta os itens da lista
+                    suggestionsBox.innerHTML = results.map(t => 
+                        `<li><a class="dropdown-item text-white border-bottom border-secondary py-2 cursor-pointer hover-bg-light" href="#">${t}</a></li>`
+                    ).join('');
+                    
+                    suggestionsBox.style.display = 'block';
+
+                    // Adiciona o clique para cada sugestão preencher o input
+                    suggestionsBox.querySelectorAll('.dropdown-item').forEach(item => {
+                        item.addEventListener('click', (ev) => {
+                            ev.preventDefault();
+                            tickerInput.value = ev.target.innerText; // Preenche o campo
+                            suggestionsBox.style.display = 'none'; // Esconde a lista
+                            tickerInput.focus(); // Devolve o foco pro teclado
+                        });
+                    });
+                } else {
+                    suggestionsBox.style.display = 'none';
                 }
-            }
-        });
+            });
+
+            // Esconde a lista se o usuário clicar em qualquer outro lugar da tela
+            document.addEventListener('click', (e) => {
+                if (!tickerInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+                    suggestionsBox.style.display = 'none';
+                }
+            });
+        }
+
+        // --- MOTOR DE DESCOBERTA DE TICKERS ---
+        const cleanTicker = tickerInput.toUpperCase().trim();
+        
+        // Verifica se o ticker digitado NÃO existe no nosso dicionário local
+        if (!TickerDictionary.list.includes(cleanTicker)) {
+            
+            // Faz um insert silencioso na tabela de descobertas (sem travar a tela do usuário)
+            supabase.from('tickers_descobertos')
+                .insert([{ ticker: cleanTicker }])
+                .then(({ error }) => {
+                    if (error) console.error("Erro ao registrar novo ticker:", error);
+                    else console.log(`Novo ticker descoberto e catalogado: ${cleanTicker}`);
+                });
+        }
 
         // --- BUSCA DE PREÇO AO DIGITAR TICKER ---
         tickerInput?.addEventListener('blur', async (e) => {
