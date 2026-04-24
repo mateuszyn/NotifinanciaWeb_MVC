@@ -1,3 +1,6 @@
+import { TickerDictionary } from '../models/TickerDictionary.js';
+import { Security } from '../services/security.js'; // Importando o nosso escudo
+
 export const AddAssetView = {
     render() {
         const container = document.querySelector('#form-container');
@@ -19,7 +22,7 @@ export const AddAssetView = {
                         <div class="input-group input-group-sm">
                             <input type="number" id="quantity" 
                                    class="form-control bg-black text-white border-secondary" 
-                                   placeholder="0" required style="flex: 1.5;">
+                                   placeholder="0" required step="any" style="flex: 1.5;">
                             <button type="button" class="btn btn-dark border-secondary qty-btn px-2" data-add="1">+1</button>
                             <button type="button" class="btn btn-dark border-secondary qty-btn px-2" data-add="10">+10</button>
                             <button type="button" class="btn btn-dark border-secondary qty-btn px-2" data-add="100">+100</button>
@@ -42,5 +45,62 @@ export const AddAssetView = {
                 </div>
             </form>
         `;
+
+        // Ativa o Autocomplete e os botões de quantidade logo após renderizar o HTML
+        this.setupEventListeners();
+    },
+
+    setupEventListeners() {
+        const tickerInput = document.querySelector('#asset-ticker');
+        const suggestionsBox = document.querySelector('#ticker-suggestions');
+
+        // --- LÓGICA DO AUTOCOMPLETE BLINDADO ---
+        if (tickerInput && suggestionsBox) {
+            tickerInput.addEventListener('input', (e) => {
+                const query = e.target.value;
+                const results = TickerDictionary.search(query);
+
+                if (results.length > 0 && query.length >= 2) {
+                    // BLINDAGEM: Sanitizamos cada item sugerido antes de injetar no <li>
+                    suggestionsBox.innerHTML = results.map(t => {
+                        const safeSuggestedTicker = Security.escapeHTML(t);
+                        return `<li><a class="dropdown-item text-white border-bottom border-secondary py-2 cursor-pointer hover-bg-light" href="#">${safeSuggestedTicker}</a></li>`;
+                    }).join('');
+                    
+                    suggestionsBox.style.display = 'block';
+
+                    // Seleciona as opções
+                    suggestionsBox.querySelectorAll('.dropdown-item').forEach(item => {
+                        item.addEventListener('click', (ev) => {
+                            ev.preventDefault();
+                            tickerInput.value = ev.target.innerText;
+                            suggestionsBox.style.display = 'none';
+                            tickerInput.focus();
+                        });
+                    });
+                } else {
+                    suggestionsBox.style.display = 'none';
+                }
+            });
+
+            // Esconde a lista se clicar fora
+            document.addEventListener('click', (e) => {
+                if (!tickerInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+                    suggestionsBox.style.display = 'none';
+                }
+            });
+        }
+
+        // --- LÓGICA DOS BOTÕES RÁPIDOS DE QUANTIDADE (+1, +10, +100) ---
+        const qtyInput = document.querySelector('#quantity');
+        const qtyBtns = document.querySelectorAll('.qty-btn');
+
+        qtyBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const addValue = parseFloat(e.target.dataset.add);
+                const currentValue = parseFloat(qtyInput.value) || 0;
+                qtyInput.value = currentValue + addValue;
+            });
+        });
     }
 };

@@ -6,6 +6,13 @@ import { supabase } from '../services/supabaseClient.js';
 import { TickerDictionary } from '../models/TickerDictionary.js';
 
 export const AssetController = {
+    // 1. ESTADO LOCAL (O Cérebro da Micro-renderização)
+    state: {
+        assets: [],
+        user: null,
+        isEventsDelegated: false
+    },
+
     async init() {
         const user = await AuthService.getUser();
 
@@ -19,39 +26,62 @@ export const AssetController = {
         user.sort_by = profile?.sort_by || 'pm_asc';
         user.preferred_broker = profile?.preferred_broker || 'Nubank'; 
 
+        this.state.user = user;
+
         const userAssets = await AssetService.getAssets();
 
-        // --- CORREÇÃO AQUI: BUSCA INDIVIDUAL PARA RESPEITAR O PLANO DA BRAPI ---
-        const enrichedAssets = await Promise.all(userAssets.map(async (asset) => {
-            // Chamamos o serviço para CADA ticker individualmente
-            const marketData = await AssetService.getMarketPrices(asset.ticker);
+        if (userAssets.length > 0) {
+            // 1. Extrai apenas os tickers de toda a carteira
+            const allTickers = userAssets.map(a => a.ticker);
+
+            // 2. Faz UMA ÚNICA requisição gigante para economizar a cota do Google
+            const marketData = await AssetService.getMarketPrices(allTickers);
             
-            // A Brapi retorna um array em 'results', pegamos o primeiro item
-            const live = marketData.results?.[0] || { regularMarketPrice: 0, regularMarketChangePercent: 0 };
-            
-            const currentPrice = live.regularMarketPrice || 0;
-            const dailyChange = live.regularMarketChangePercent || 0;
+            // 3. Cria um dicionário com os preços para acharmos mais rápido
+            const livePrices = {};
+            if (marketData.results) {
+                marketData.results.forEach(res => {
+                    livePrices[res.symbol] = res;
+                });
+            }
 
-            const variacaoPM = asset.averagePrice > 0 
-                ? ((currentPrice / asset.averagePrice) - 1) * 100 
-                : 0;
+            // 4. Enriquecemos os ativos da carteira com os dados da memória
+            const enrichedAssets = userAssets.map(asset => {
+                const live = livePrices[asset.ticker] || { regularMarketPrice: 0, regularMarketChangePercent: 0 };
+                
+                const currentPrice = live.regularMarketPrice || 0;
+                const dailyChange = live.regularMarketChangePercent || 0;
+                const variacaoPM = asset.averagePrice > 0 
+                    ? ((currentPrice / asset.averagePrice) - 1) * 100 
+                    : 0;
 
-            return {
-                ...asset,
-                currentPrice,
-                dailyChange,
-                variacaoPM,
-                totalValue: currentPrice * asset.quantity
-            };
-        }));
+                return {
+                    ...asset,
+                    currentPrice,
+                    dailyChange,
+                    variacaoPM,
+                    totalValue: currentPrice * asset.quantity
+                };
+            });
 
-        // Ordenação e Renderização
-        const sortedAssets = this.sortAssets(enrichedAssets, user.sort_by);
+            this.state.assets = enrichedAssets;
+        } else {
+            this.state.assets = [];
+        }
 
-        AssetView.render(sortedAssets, user);
+        this.renderLocalState();
+
+        if (!this.state.isEventsDelegated) {
+            this.setupDelegatedEvents();
+            this.state.isEventsDelegated = true;
+        }
+    },
+
+    // 2. FUNÇÃO DE MICRO-RENDERIZAÇÃO (Desenha a tela sem bater em nenhuma API externa)
+    renderLocalState() {
+        const sortedAssets = this.sortAssets(this.state.assets, this.state.user.sort_by);
+        AssetView.render(sortedAssets, this.state.user);
         AddAssetView.render();
-
-        this.setupEventListeners();
     },
 
     sortAssets(assets, criteria) {
@@ -71,266 +101,206 @@ export const AssetController = {
         }
     },
 
-    setupEventListeners() {
-        // --- 1. SELETOR DE ORDENAÇÃO (CORRIGIDO) ---
-        document.querySelector('#sort-select')?.addEventListener('change', async (e) => {
-            const newSort = e.target.value;
-            const user = await AuthService.getUser();
-            e.target.disabled = true;
-            try {
-                await supabase.from('profiles').update({ sort_by: newSort }).eq('id', user.id);
-                await this.init(); 
-            } catch (err) { console.error(err); } 
-            finally { e.target.disabled = false; }
-        });
+    // 3. DELEGAÇÃO DE EVENTOS (À prova de quebras e redesenhos)
+    setupDelegatedEvents() {
+        const appContainer = document.querySelector('#app');
+        if (!appContainer) return;
 
-        // --- 2. SELETOR DE CORRETORA (COM FEEDBACK) ---
-        const brokerSelect = document.querySelector('#broker-select');
-        brokerSelect?.addEventListener('change', async (e) => {
-            const newBroker = e.target.value;
-            const user = await AuthService.getUser();
+        // --- Cliques Genéricos ---
+        appContainer.addEventListener('click', async (e) => {
             
-            // Bloqueia para evitar cliques duplos
-            e.target.disabled = true;
-
-            try {
-                // 1. Atualiza no Supabase
-                const { error } = await supabase
-                    .from('profiles')
-                    .update({ preferred_broker: newBroker })
-                    .eq('id', user.id);
-
-                if (error) throw error;
-
-                // 2. IMPORTANTE: Atualizamos o objeto 'user' localmente antes do init
-                // Isso garante que a View receba o dado novo imediatamente
-                user.preferred_broker = newBroker;
-
-                // 3. Reinicializa a tela para aplicar as cores e links novos
-                await this.init(); 
-
-            } catch (err) {
-                console.error("Erro ao salvar corretora:", err);
-                alert("Erro ao trocar corretora.");
-            } finally {
-                if (document.querySelector('#broker-select')) {
-                    document.querySelector('#broker-select').disabled = false;
-                }
-            }
-        });// FECHA o listener da corretora aqui
-
-        // --- OUTROS LISTENERS ---
-        // (Logout)
-        document.querySelector('#btn-logout')?.addEventListener('click', async () => {
-            await AuthService.signOut();
-            window.location.reload();
-        });
-
-        // (Notificações)
-        document.querySelector('#btn-toggle-notif')?.addEventListener('click', async (e) => {
-            const btn = e.currentTarget;
-            const icon = btn.querySelector('i');
-            try {
-                icon.classList.add('bell-animating');
-                const user = await AuthService.getUser();
-                const { data: profile } = await supabase.from('profiles').select('notifications_enabled').eq('id', user.id).maybeSingle();
-                const novoEstado = profile ? !profile.notifications_enabled : true;
-                await supabase.from('profiles').upsert({ id: user.id, email: user.email, notifications_enabled: novoEstado, updated_at: new Date() });
-                await this.init(); 
-            } catch (error) {
-                icon.classList.remove('bell-animating');
-                alert("Erro ao atualizar notificações.");
-            }
-        });
-
-        // --- BOTÕES DE ATALHO DE QUANTIDADE ---
-        document.querySelectorAll('.qty-btn').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const inputQty = document.querySelector('#quantity');
-                const addValue = parseInt(e.currentTarget.dataset.add);
-                const currentValue = parseInt(inputQty.value) || 0;
-                inputQty.value = currentValue + addValue;
-            });
-        });
-
-        // --- RECOMENDAÇÃO DE TICKERS ---
-        const tickerInput = document.querySelector('#asset-ticker');
-        const suggestionsBox = document.querySelector('#ticker-suggestions');
-
-        if (tickerInput && suggestionsBox) {
-            // Escuta a digitação
-            tickerInput.addEventListener('input', (e) => {
-                const query = e.target.value;
-                const results = TickerDictionary.search(query);
-
-                if (results.length > 0 && query.length >= 2) {
-                    // Monta os itens da lista
-                    suggestionsBox.innerHTML = results.map(t => 
-                        `<li><a class="dropdown-item text-white border-bottom border-secondary py-2 cursor-pointer hover-bg-light" href="#">${t}</a></li>`
-                    ).join('');
-                    
-                    suggestionsBox.style.display = 'block';
-
-                    // Adiciona o clique para cada sugestão preencher o input
-                    suggestionsBox.querySelectorAll('.dropdown-item').forEach(item => {
-                        item.addEventListener('click', (ev) => {
-                            ev.preventDefault();
-                            tickerInput.value = ev.target.innerText; // Preenche o campo
-                            suggestionsBox.style.display = 'none'; // Esconde a lista
-                            tickerInput.focus(); // Devolve o foco pro teclado
-                        });
-                    });
-                } else {
-                    suggestionsBox.style.display = 'none';
-                }
-            });
-
-            // Esconde a lista se o usuário clicar em qualquer outro lugar da tela
-            document.addEventListener('click', (e) => {
-                if (!tickerInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
-                    suggestionsBox.style.display = 'none';
-                }
-            });
-        }
-
-        // --- MOTOR DE DESCOBERTA DE TICKERS ---
-        const cleanTicker = tickerInput.toUpperCase().trim();
-        
-        // Verifica se o ticker digitado NÃO existe no nosso dicionário local
-        if (!TickerDictionary.list.includes(cleanTicker)) {
-            
-            // Faz um insert silencioso na tabela de descobertas (sem travar a tela do usuário)
-            supabase.from('tickers_descobertos')
-                .insert([{ ticker: cleanTicker }])
-                .then(({ error }) => {
-                    if (error) console.error("Erro ao registrar novo ticker:", error);
-                    else console.log(`Novo ticker descoberto e catalogado: ${cleanTicker}`);
-                });
-        }
-
-        // --- BUSCA DE PREÇO AO DIGITAR TICKER ---
-        tickerInput?.addEventListener('blur', async (e) => {
-            const ticker = e.target.value.toUpperCase().trim();
-            if (ticker) {
-                const data = await AssetService.getPrice(ticker);
-                if (data.price > 0) {
-                    const priceInput = document.querySelector('#averagePrice');
-                    const priceDisplay = document.querySelector('#live-price');
-                    const infoSpan = document.querySelector('#current-price-info');
-
-                    if (!priceInput.value) priceInput.value = data.price.toFixed(2);
-                    
-                    if (priceDisplay) {
-                        const sign = data.changePercent >= 0 ? '+' : '';
-                        priceDisplay.innerText = `${data.price.toFixed(2)} (${sign}${data.changePercent.toFixed(2)}%)`;
-                        priceDisplay.className = data.changePercent >= 0 ? 'text-success' : 'text-danger';
-                    }
-                    if (infoSpan) infoSpan.style.display = 'inline';
-                }
-            }
-        });
-
-        // --- CRIAR ASSET ---
-        const form = document.querySelector('#form-asset');
-        form?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const tickerValue = document.querySelector('#ticker').value.toUpperCase().trim();
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerText;
-            
-            submitBtn.innerText = "Validando...";
-            submitBtn.disabled = true;
-
-            try {
-                // 1. Validação de Duplicidade Local
-                // Buscamos os ativos atuais para comparar
-                const currentAssets = await AssetService.getAssets();
-                const alreadyExists = currentAssets.some(asset => asset.ticker === tickerValue);
-
-                if (alreadyExists) {
-                    alert(`O ativo ${tickerValue} já está cadastrado na sua carteira. Edite o existente para alterar a quantidade ou preço médio.`);
-                    return; // Interrompe a execução aqui
-                }
-
-                // 2. Validação de Existência do Ticker (API)
-                const isValid = await AssetService.validateTicker(tickerValue);
-                if (!isValid) {
-                    alert(`O ticker "${tickerValue}" não foi encontrado.`);
-                    return;
-                }
-
-                const newAsset = {
-                    ticker: tickerValue,
-                    quantity: Number(document.querySelector('#quantity').value),
-                    averagePrice: parseFloat(document.querySelector('#averagePrice').value)
-                };
-
-                await AssetService.addAsset(newAsset);
-                form.reset();
-                
-                // Fecha a gaveta após adicionar (opcional, mas melhora o UX)
-                document.querySelector('#add-asset-drawer')?.classList.add('collapsed');
-                
-                await this.init();
-            } catch (error) {
-                console.error(error);
-                alert('Erro ao processar sua solicitação.');
-            } finally {
-                submitBtn.innerText = originalText;
-                submitBtn.disabled = false;
-            }
-        });
-
-        // --- DELETAR ASSET ---
-        document.querySelectorAll('.btn-delete').forEach(button => {
-            button.addEventListener('click', async (e) => {
-                const idDoAtivo = e.currentTarget.dataset.id;
+            // EXCLUSÃO (Micro-renderização)
+            const btnDelete = e.target.closest('.btn-delete');
+            if (btnDelete) {
+                const idDoAtivo = btnDelete.dataset.id;
                 if (confirm('Deseja realmente excluir este ativo?')) {
                     try {
                         await AssetService.deleteAsset(idDoAtivo);
-                        await this.init();
+                        
+                        // Remove apenas da memória e atualiza a tela na velocidade da luz
+                        this.state.assets = this.state.assets.filter(a => a.id != idDoAtivo);
+                        this.renderLocalState();
                     } catch (error) {
                         alert('Erro ao deletar: ' + error.message);
                     }
                 }
-            });
+                return;
+            }
+
+            // ABRIR MODAL EDIÇÃO
+            const btnEdit = e.target.closest('.btn-edit');
+            if (btnEdit) {
+                document.querySelector('#update-id').value = btnEdit.dataset.id;
+                document.querySelector('#modal-ticker-title').innerText = btnEdit.dataset.ticker;
+                document.querySelector('#update-quantity').value = btnEdit.dataset.qty;
+                document.querySelector('#update-averagePrice').value = btnEdit.dataset.price;
+                document.querySelector('#update-modal-overlay')?.classList.add('active');
+                return;
+            }
+
+            // FECHAR MODAL
+            const overlay = document.querySelector('#update-modal-overlay');
+            const btnCloseModal = e.target.closest('#btn-close-modal');
+            if (btnCloseModal || e.target === overlay) {
+                overlay?.classList.remove('active');
+                return;
+            }
+
+            // TOGGLE NOTIFICAÇÕES (Micro-renderização)
+            const btnNotif = e.target.closest('#btn-toggle-notif');
+            if (btnNotif) {
+                const icon = btnNotif.querySelector('i');
+                try {
+                    icon.classList.add('bell-animating');
+                    const novoEstado = !this.state.user.notifications_enabled;
+                    await supabase.from('profiles').upsert({ id: this.state.user.id, email: this.state.user.email, notifications_enabled: novoEstado, updated_at: new Date() });
+                    
+                    this.state.user.notifications_enabled = novoEstado;
+                    this.renderLocalState();
+                } catch (error) {
+                    icon.classList.remove('bell-animating');
+                    alert("Erro ao atualizar notificações.");
+                }
+                return;
+            }
+
+            // LOGOUT
+            if (e.target.closest('#btn-logout')) {
+                await AuthService.signOut();
+                window.location.reload();
+                return;
+            }
         });
 
-        // --- EDIÇÃO (MODAL) ---
-        const overlay = document.querySelector('#update-modal-overlay');
+        // --- Filtros e Corretoras (Eventos Change via Delegação) ---
+        appContainer.addEventListener('change', async (e) => {
+            const sortSelect = e.target.closest('#sort-select');
+            if (sortSelect) {
+                const newSort = sortSelect.value;
+                sortSelect.disabled = true;
+                try {
+                    await supabase.from('profiles').update({ sort_by: newSort }).eq('id', this.state.user.id);
+                    this.state.user.sort_by = newSort;
+                    this.renderLocalState();
+                } catch (err) { console.error(err); }
+                return;
+            }
 
-        document.querySelectorAll('.btn-edit').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const btn = e.currentTarget;
-                document.querySelector('#update-id').value = btn.dataset.id;
-                document.querySelector('#modal-ticker-title').innerText = btn.dataset.ticker;
-                document.querySelector('#update-quantity').value = btn.dataset.qty;
-                document.querySelector('#update-averagePrice').value = btn.dataset.price;
-                overlay.classList.add('active');
-            });
+            const brokerSelect = e.target.closest('#broker-select');
+            if (brokerSelect) {
+                const newBroker = brokerSelect.value;
+                brokerSelect.disabled = true;
+                try {
+                    await supabase.from('profiles').update({ preferred_broker: newBroker }).eq('id', this.state.user.id);
+                    this.state.user.preferred_broker = newBroker;
+                    this.renderLocalState();
+                } catch (err) { console.error(err); }
+                return;
+            }
         });
 
-        document.querySelector('#btn-close-modal')?.addEventListener('click', () => {
-            overlay.classList.remove('active');
+        // --- Formulários (Submit) ---
+        appContainer.addEventListener('submit', async (e) => {
+            
+            // SALVAR EDIÇÃO (Micro-renderização com recálculo matemático local)
+            const formUpdate = e.target.closest('#form-update-asset');
+            if (formUpdate) {
+                e.preventDefault();
+                const id = document.querySelector('#update-id').value;
+                const data = {
+                    quantity: Number(document.querySelector('#update-quantity').value),
+                    averagePrice: parseFloat(document.querySelector('#update-averagePrice').value)
+                };
+                
+                try {
+                    await AssetService.updateAsset(id, data);
+                    document.querySelector('#update-modal-overlay')?.classList.remove('active');
+                    
+                    // Acha o ativo na memória e atualiza sem chamar o Google Finance
+                    const asset = this.state.assets.find(a => a.id == id);
+                    if (asset) {
+                        asset.quantity = data.quantity;
+                        asset.averagePrice = data.averagePrice;
+                        asset.variacaoPM = asset.averagePrice > 0 ? ((asset.currentPrice / asset.averagePrice) - 1) * 100 : 0;
+                        asset.totalValue = asset.currentPrice * asset.quantity;
+                    }
+                    this.renderLocalState();
+                } catch (error) {
+                    alert("Erro: " + error.message);
+                }
+                return;
+            }
+
+            // ADICIONAR NOVO ATIVO
+            const formCreate = e.target.closest('#form-asset');
+            if (formCreate) {
+                e.preventDefault();
+                const tickerInput = document.querySelector('#asset-ticker');
+                const tickerValue = tickerInput ? tickerInput.value.toUpperCase().trim() : '';
+                const submitBtn = formCreate.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerText;
+
+                submitBtn.innerText = "Validando...";
+                submitBtn.disabled = true;
+
+                try {
+                    const alreadyExists = this.state.assets.some(asset => asset.ticker === tickerValue);
+                    if (alreadyExists) {
+                        alert(`O ativo ${tickerValue} já está cadastrado. Use a edição.`);
+                        submitBtn.innerText = originalText; submitBtn.disabled = false;
+                        return;
+                    }
+
+                    const isValid = await AssetService.validateTicker(tickerValue);
+                    if (!isValid) {
+                        alert(`O ticker "${tickerValue}" não foi encontrado.`);
+                        submitBtn.innerText = originalText; submitBtn.disabled = false;
+                        return;
+                    }
+
+                    const newAsset = {
+                        ticker: tickerValue,
+                        quantity: Number(document.querySelector('#quantity').value),
+                        averagePrice: parseFloat(document.querySelector('#averagePrice').value)
+                    };
+
+                    await AssetService.addAsset(newAsset);
+
+                    // Motor de descoberta corrigido
+                    if (!TickerDictionary.list.includes(tickerValue)) {
+                        supabase.from('tickers_descobertos').insert([{ ticker: tickerValue }]).then();
+                    }
+
+                    document.querySelector('#add-asset-drawer')?.classList.add('collapsed');
+                    
+                    // Como é um ativo novo, refazemos o init() para buscar seu preço real no backend
+                    await this.init();
+                } catch (error) {
+                    alert('Erro ao processar sua solicitação.');
+                    submitBtn.innerText = originalText; submitBtn.disabled = false;
+                }
+            }
         });
 
-        overlay?.addEventListener('click', (e) => {
-            if (e.target === overlay) overlay.classList.remove('active');
-        });
-
-        document.querySelector('#form-update-asset')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = document.querySelector('#update-id').value;
-            const data = {
-                quantity: Number(document.querySelector('#update-quantity').value),
-                averagePrice: parseFloat(document.querySelector('#update-averagePrice').value)
-            };
-            try {
-                await AssetService.updateAsset(id, data);
-                overlay.classList.remove('active');
-                await this.init();
-            } catch (error) {
-                alert("Erro: " + error.message);
+        // --- Perda de foco para autocompletar preço ---
+        appContainer.addEventListener('focusout', async (e) => {
+            const tickerInput = e.target.closest('#asset-ticker');
+            if (tickerInput) {
+                const ticker = tickerInput.value.toUpperCase().trim();
+                if (ticker && ticker.length >= 4) {
+                    try {
+                        const data = await AssetService.getPrice(ticker);
+                        if (data && data.price > 0) {
+                            // Preenche o input do formulário
+                            const priceInput = document.querySelector('#averagePrice');
+                            if (priceInput && !priceInput.value) {
+                                priceInput.value = data.price.toFixed(2);
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Erro ao buscar preço no Google Finance:", err);
+                    }
+                }
             }
         });
     }

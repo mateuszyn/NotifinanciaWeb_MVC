@@ -30,29 +30,30 @@ export const AssetService = {
         }
     },
 
-    // 2. UNIFICADO: Agora todas as buscas de preço usam a Edge Function
-    async getMarketPrices(ticker) {
-        if (!ticker) return { results: [] };
+    // 2. UNIFICADO: Busca em LOTE (Batch) para economizar a cota do Google
+    async getMarketPrices(tickers) {
+        if (!tickers || (Array.isArray(tickers) && tickers.length === 0)) return { results: [] };
         
         try {
-            // BLINDAGEM: Se vier um array, pega o primeiro. Se vier objeto, tenta pegar a propriedade ticker. Senão, converte pra texto.
             let tickerString = '';
-            if (Array.isArray(ticker)) {
-                tickerString = String(ticker[0] || ''); 
-            } else if (typeof ticker === 'object' && ticker.ticker) {
-                tickerString = String(ticker.ticker);
+            
+            // Se for um Array (vários ativos), junta tudo com vírgula
+            if (Array.isArray(tickers)) {
+                tickerString = tickers.join(','); 
+            } else if (typeof tickers === 'object' && tickers.ticker) {
+                tickerString = String(tickers.ticker);
             } else {
-                tickerString = String(ticker);
+                tickerString = String(tickers);
             }
 
-            const cleanTicker = tickerString.toUpperCase().trim();
+            const cleanTicker = tickerString.toUpperCase().replace(/\s/g, ''); // Limpa os espaços
 
             const { data, error } = await supabase.functions.invoke('market-data', {
                 body: { tickers: cleanTicker }
             });
 
             if (error || !data || !data.results) {
-                console.warn(`Aviso: Dados de ${cleanTicker} não retornaram.`);
+                console.warn(`Aviso: Falha ao buscar dados em lote para: ${cleanTicker}`);
                 return { results: [] }; 
             }
 

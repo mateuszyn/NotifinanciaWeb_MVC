@@ -1,7 +1,12 @@
+import { Security } from '../services/security.js';
+
 export const AssetView = {
     render(assets, user) {
         const app = document.querySelector('#app');
-        const userName = user.user_metadata?.full_name || user.email.split('@')[0];
+        
+        // Blindagem 1: Sanitiza o nome ou e-mail do usuário
+        const rawUserName = user.user_metadata?.full_name || user.email.split('@')[0];
+        const userName = Security.escapeHTML(rawUserName);
         
         const BROKERS = {
             'Nubank': { color: '#820AD1', textColor: '#FFFFFF', url: 'https://play.google.com/store/apps/details?id=com.nu.production' },
@@ -27,10 +32,13 @@ export const AssetView = {
             if (profitPct > 0) borderClass = dailyChange >= 0 ? 'border-profit-viva-pos' : 'border-profit-dia-neg';
             else if (profitPct < 0) borderClass = dailyChange >= 0 ? 'border-loss-dia-pos' : 'border-loss-viva-neg';
 
+            // Blindagem 2: Sanitiza o ticker vindo do banco de dados
+            const safeTicker = Security.escapeHTML(asset.ticker);
+
             // Se for visitante, mostra uma tag "Exemplo". Se for usuário real, mostra Lixeira e Lápis.
             const actionButtons = user.isGuest 
                 ? `<span class="badge bg-secondary">Dados de Exemplo</span>`
-                : `<button class="btn btn-link p-0 text-primary btn-edit" data-id="${asset.id}" data-ticker="${asset.ticker}" data-qty="${asset.quantity}" data-price="${asset.averagePrice}">
+                : `<button class="btn btn-link p-0 text-primary btn-edit" data-id="${asset.id}" data-ticker="${safeTicker}" data-qty="${asset.quantity}" data-price="${asset.averagePrice}">
                        <i class="bi bi-pencil-square fs-4"></i>
                    </button>
                    <button class="btn btn-link p-0 text-danger btn-delete" data-id="${asset.id}">
@@ -41,7 +49,7 @@ export const AssetView = {
                 <div class="col-12 col-md-6 col-lg-4 mb-4">
                     <div class="asset-card ${borderClass}">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h4 class="m-0 fw-bold">${asset.ticker}</h4>
+                            <h4 class="m-0 fw-bold">${safeTicker}</h4>
                             <div class="d-flex gap-3 align-items-center">
                                 ${actionButtons}
                             </div>
@@ -101,7 +109,7 @@ export const AssetView = {
 
                     <div class="d-flex align-items-center justify-content-center gap-3 actions-container">
                         <button id="btn-toggle-notif" class="btn btn-link p-0 shadow-none border-0" ${user.isGuest ? 'disabled' : ''}>
-                            <i class="${bellIcon} fs-4"></i>
+                            <i class="${bellIcon} fs-4" title="${bellTitle}"></i>
                         </button>
                         <span class="text-secondary d-none d-md-block small">
                             Olá, <b class="text-white">${user.isGuest ? 'Visitante' : userName}</b>
