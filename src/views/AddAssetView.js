@@ -69,13 +69,14 @@ export const AddAssetView = {
                     
                     suggestionsBox.style.display = 'block';
 
-                    // Seleciona as opções
+                    // Adiciona o clique para cada sugestão preencher o input
                     suggestionsBox.querySelectorAll('.dropdown-item').forEach(item => {
                         item.addEventListener('click', (ev) => {
                             ev.preventDefault();
-                            tickerInput.value = ev.target.innerText;
-                            suggestionsBox.style.display = 'none';
-                            tickerInput.focus();
+                            tickerInput.value = ev.target.innerText; // Preenche o campo
+                            suggestionsBox.style.display = 'none'; // Esconde a lista
+                            // Força o disparo da busca avisando o AssetController que o ativo foi escolhido
+                            tickerInput.dispatchEvent(new Event('focusout', { bubbles: true }));
                         });
                     });
                 } else {

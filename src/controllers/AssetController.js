@@ -284,21 +284,29 @@ export const AssetController = {
 
         // --- Perda de foco para autocompletar preço ---
         appContainer.addEventListener('focusout', async (e) => {
-            const tickerInput = e.target.closest('#asset-ticker');
-            if (tickerInput) {
-                const ticker = tickerInput.value.toUpperCase().trim();
-                if (ticker && ticker.length >= 4) {
+            // Usa o ID diretamente para garantir que estamos no input certo
+            if (e.target && e.target.id === 'asset-ticker') {
+                const ticker = e.target.value.toUpperCase().trim();
+                const priceInput = document.querySelector('#averagePrice');
+                
+                if (ticker && ticker.length >= 4 && priceInput && !priceInput.value) {
+                    
+                    // FEEDBACK VISUAL: Avisa que o Google está pensando
+                    const originalPlaceholder = priceInput.placeholder;
+                    priceInput.placeholder = "Buscando...";
+                    priceInput.disabled = true; // Evita que o usuário digite enquanto busca
+                    
                     try {
                         const data = await AssetService.getPrice(ticker);
-                        if (data && data.price > 0) {
-                            // Preenche o input do formulário
-                            const priceInput = document.querySelector('#averagePrice');
-                            if (priceInput && !priceInput.value) {
-                                priceInput.value = data.price.toFixed(2);
-                            }
+                        if (data && data.price > 0 && !priceInput.value) {
+                            priceInput.value = data.price.toFixed(2);
                         }
                     } catch (err) {
-                        console.error("Erro ao buscar preço no Google Finance:", err);
+                        console.error("Erro ao buscar preço no Google:", err);
+                    } finally {
+                        // Devolve o campo ao normal
+                        priceInput.placeholder = originalPlaceholder;
+                        priceInput.disabled = false;
                     }
                 }
             }
