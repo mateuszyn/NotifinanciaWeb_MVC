@@ -31,13 +31,10 @@ export const AssetController = {
         const userAssets = await AssetService.getAssets();
 
         if (userAssets.length > 0) {
-            // 1. Extrai apenas os tickers de toda a carteira
             const allTickers = userAssets.map(a => a.ticker);
 
-            // 2. Faz UMA ÚNICA requisição gigante para economizar a cota do Google
             const marketData = await AssetService.getMarketPrices(allTickers);
             
-            // 3. Cria um dicionário com os preços para acharmos mais rápido
             const livePrices = {};
             if (marketData.results) {
                 marketData.results.forEach(res => {
@@ -45,7 +42,6 @@ export const AssetController = {
                 });
             }
 
-            // 4. Enriquecemos os ativos da carteira com os dados da memória
             const enrichedAssets = userAssets.map(asset => {
                 const live = livePrices[asset.ticker] || { regularMarketPrice: 0, regularMarketChangePercent: 0 };
                 
@@ -77,7 +73,7 @@ export const AssetController = {
         }
     },
 
-    // 2. FUNÇÃO DE MICRO-RENDERIZAÇÃO (Desenha a tela sem bater em nenhuma API externa)
+    // 2. FUNÇÃO DE MICRO-RENDERIZAÇÃO
     renderLocalState() {
         const sortedAssets = this.sortAssets(this.state.assets, this.state.user.sort_by);
         AssetView.render(sortedAssets, this.state.user);
@@ -101,7 +97,36 @@ export const AssetController = {
         }
     },
 
-    // 3. DELEGAÇÃO DE EVENTOS (À prova de quebras e redesenhos)
+    // --- FUNÇÕES DE ALERTA MODERNAS (SWEETALERT2) ---
+    showLoading(message) {
+        Swal.fire({
+            title: message,
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+    },
+
+    showSuccess(message) {
+        Swal.fire({
+            icon: 'success',
+            title: 'Sucesso!',
+            text: message,
+            timer: 2000,
+            showConfirmButton: false
+        });
+    },
+
+    showError(message) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: message
+        });
+    },
+
+    // 3. DELEGAÇÃO DE EVENTOS
     setupDelegatedEvents() {
         const appContainer = document.querySelector('#app');
         if (!appContainer) return;
@@ -109,21 +134,33 @@ export const AssetController = {
         // --- Cliques Genéricos ---
         appContainer.addEventListener('click', async (e) => {
             
-            // EXCLUSÃO (Micro-renderização)
+            // EXCLUSÃO (Com SweetAlert)
             const btnDelete = e.target.closest('.btn-delete');
             if (btnDelete) {
                 const idDoAtivo = btnDelete.dataset.id;
-                if (confirm('Deseja realmente excluir este ativo?')) {
-                    try {
-                        await AssetService.deleteAsset(idDoAtivo);
-                        
-                        // Remove apenas da memória e atualiza a tela na velocidade da luz
-                        this.state.assets = this.state.assets.filter(a => a.id != idDoAtivo);
-                        this.renderLocalState();
-                    } catch (error) {
-                        alert('Erro ao deletar: ' + error.message);
+                
+                Swal.fire({
+                    title: 'Excluir Ativo?',
+                    text: "Você não poderá reverter isso!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Sim, excluir!',
+                    cancelButtonText: 'Cancelar'
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
+                        this.showLoading('Excluindo ativo...');
+                        try {
+                            await AssetService.deleteAsset(idDoAtivo);
+                            this.state.assets = this.state.assets.filter(a => a.id != idDoAtivo);
+                            this.renderLocalState();
+                            this.showSuccess('Ativo removido da carteira.');
+                        } catch (error) {
+                            this.showError('Erro ao deletar: ' + error.message);
+                        }
                     }
-                }
+                });
                 return;
             }
 
@@ -146,7 +183,7 @@ export const AssetController = {
                 return;
             }
 
-            // TOGGLE NOTIFICAÇÕES (Micro-renderização)
+            // TOGGLE NOTIFICAÇÕES (Com Toast do SweetAlert)
             const btnNotif = e.target.closest('#btn-toggle-notif');
             if (btnNotif) {
                 const icon = btnNotif.querySelector('i');
@@ -157,9 +194,19 @@ export const AssetController = {
                     
                     this.state.user.notifications_enabled = novoEstado;
                     this.renderLocalState();
+
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: novoEstado ? 'success' : 'info',
+                        title: novoEstado ? 'Notificações Ativadas' : 'Notificações Desativadas',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+
                 } catch (error) {
                     icon.classList.remove('bell-animating');
-                    alert("Erro ao atualizar notificações.");
+                    this.showError("Erro ao atualizar notificações.");
                 }
                 return;
             }
@@ -172,7 +219,7 @@ export const AssetController = {
             }
         });
 
-        // --- Filtros e Corretoras (Eventos Change via Delegação) ---
+        // --- Filtros e Corretoras ---
         appContainer.addEventListener('change', async (e) => {
             const sortSelect = e.target.closest('#sort-select');
             if (sortSelect) {
@@ -202,7 +249,7 @@ export const AssetController = {
         // --- Formulários (Submit) ---
         appContainer.addEventListener('submit', async (e) => {
             
-            // SALVAR EDIÇÃO (Micro-renderização com recálculo matemático local)
+            // SALVAR EDIÇÃO COM FEEDBACK
             const formUpdate = e.target.closest('#form-update-asset');
             if (formUpdate) {
                 e.preventDefault();
@@ -212,11 +259,12 @@ export const AssetController = {
                     averagePrice: parseFloat(document.querySelector('#update-averagePrice').value)
                 };
                 
+                this.showLoading('Atualizando ativo...');
+
                 try {
                     await AssetService.updateAsset(id, data);
                     document.querySelector('#update-modal-overlay')?.classList.remove('active');
                     
-                    // Acha o ativo na memória e atualiza sem chamar o Google Finance
                     const asset = this.state.assets.find(a => a.id == id);
                     if (asset) {
                         asset.quantity = data.quantity;
@@ -225,38 +273,40 @@ export const AssetController = {
                         asset.totalValue = asset.currentPrice * asset.quantity;
                     }
                     this.renderLocalState();
+                    this.showSuccess('Ativo atualizado com sucesso!');
                 } catch (error) {
-                    alert("Erro: " + error.message);
+                    this.showError("Erro: " + error.message);
                 }
                 return;
             }
 
-            // ADICIONAR NOVO ATIVO
+            // ADICIONAR NOVO ATIVO COM FEEDBACK
             const formCreate = e.target.closest('#form-asset');
             if (formCreate) {
                 e.preventDefault();
                 const tickerInput = document.querySelector('#asset-ticker');
                 const tickerValue = tickerInput ? tickerInput.value.toUpperCase().trim() : '';
-                const submitBtn = formCreate.querySelector('button[type="submit"]');
-                const originalText = submitBtn.innerText;
 
-                submitBtn.innerText = "Validando...";
-                submitBtn.disabled = true;
+                this.showLoading('Buscando e validando ativo...');
 
                 try {
                     const alreadyExists = this.state.assets.some(asset => asset.ticker === tickerValue);
                     if (alreadyExists) {
-                        alert(`O ativo ${tickerValue} já está cadastrado. Use a edição.`);
-                        submitBtn.innerText = originalText; submitBtn.disabled = false;
+                        this.showError(`O ativo ${tickerValue} já está cadastrado. Use a edição.`);
                         return;
                     }
 
                     const isValid = await AssetService.validateTicker(tickerValue);
                     if (!isValid) {
-                        alert(`O ticker "${tickerValue}" não foi encontrado.`);
-                        submitBtn.innerText = originalText; submitBtn.disabled = false;
+                        this.showError(`O ticker "${tickerValue}" não foi encontrado.`);
                         return;
                     }
+
+                    Swal.fire({
+                        title: 'Salvando na carteira...',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    });
 
                     const newAsset = {
                         ticker: tickerValue,
@@ -266,35 +316,30 @@ export const AssetController = {
 
                     await AssetService.addAsset(newAsset);
 
-                    // Motor de descoberta corrigido
                     if (!TickerDictionary.list.includes(tickerValue)) {
                         supabase.from('tickers_descobertos').insert([{ ticker: tickerValue }]).then();
                     }
 
                     document.querySelector('#add-asset-drawer')?.classList.add('collapsed');
                     
-                    // Como é um ativo novo, refazemos o init() para buscar seu preço real no backend
                     await this.init();
+                    this.showSuccess(`${tickerValue} adicionado com sucesso!`);
                 } catch (error) {
-                    alert('Erro ao processar sua solicitação.');
-                    submitBtn.innerText = originalText; submitBtn.disabled = false;
+                    this.showError('Erro ao processar sua solicitação.');
                 }
             }
         });
 
         // --- Perda de foco para autocompletar preço ---
         appContainer.addEventListener('focusout', async (e) => {
-            // Usa o ID diretamente para garantir que estamos no input certo
             if (e.target && e.target.id === 'asset-ticker') {
                 const ticker = e.target.value.toUpperCase().trim();
                 const priceInput = document.querySelector('#averagePrice');
                 
                 if (ticker && ticker.length >= 4 && priceInput && !priceInput.value) {
-                    
-                    // FEEDBACK VISUAL: Avisa que o Google está pensando
                     const originalPlaceholder = priceInput.placeholder;
                     priceInput.placeholder = "Buscando...";
-                    priceInput.disabled = true; // Evita que o usuário digite enquanto busca
+                    priceInput.disabled = true; 
                     
                     try {
                         const data = await AssetService.getPrice(ticker);
@@ -304,7 +349,6 @@ export const AssetController = {
                     } catch (err) {
                         console.error("Erro ao buscar preço no Google:", err);
                     } finally {
-                        // Devolve o campo ao normal
                         priceInput.placeholder = originalPlaceholder;
                         priceInput.disabled = false;
                     }
