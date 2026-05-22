@@ -2,7 +2,21 @@ import { supabase } from './supabaseClient.js';
 import { Asset } from '../models/Asset.js';
 
 export const AssetService = {
-    // Busca ativos no banco de dados
+    // --- BLINDAGEM JWT ---
+    // Captura o token de sessão ativo para provar que a requisição é legítima
+    async _getAuthHeaders() {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+            throw new Error('Acesso negado: Usuário não autenticado.');
+        }
+        
+        return {
+            Authorization: `Bearer ${session.access_token}`
+        };
+    },
+
+    // Busca ativos no banco de dados (A segurança aqui já é feita pelo RLS do banco)
     async getAssets() {
         const { data, error } = await supabase.from('assets').select('*');
         if (error) return [];
@@ -13,13 +27,15 @@ export const AssetService = {
         });
     },
 
-    // 1. ATUALIZADO: Busca sugestões via Edge Function (Seguro)
+    // 1. ATUALIZADO: Busca sugestões enviando o Token JWT
     async getTickerSuggestions(query) {
         if (!query || query.length < 2) return [];
         try {
-            // Usamos a função proxy para buscar a lista de sugestões
+            const headers = await this._getAuthHeaders();
+            
             const { data, error } = await supabase.functions.invoke('market-data', {
-                body: { search: query, endpoint: 'list' } 
+                body: { search: query, endpoint: 'list' },
+                headers: headers
             });
 
             if (error) throw error;
@@ -30,14 +46,13 @@ export const AssetService = {
         }
     },
 
-    // 2. UNIFICADO: Busca em LOTE (Batch) para economizar a cota do Google
+    // 2. UNIFICADO: Busca em LOTE (Batch) enviando o Token JWT
     async getMarketPrices(tickers) {
         if (!tickers || (Array.isArray(tickers) && tickers.length === 0)) return { results: [] };
         
         try {
             let tickerString = '';
             
-            // Se for um Array (vários ativos), junta tudo com vírgula
             if (Array.isArray(tickers)) {
                 tickerString = tickers.join(','); 
             } else if (typeof tickers === 'object' && tickers.ticker) {
@@ -46,10 +61,13 @@ export const AssetService = {
                 tickerString = String(tickers);
             }
 
-            const cleanTicker = tickerString.toUpperCase().replace(/\s/g, ''); // Limpa os espaços
+            const cleanTicker = tickerString.toUpperCase().replace(/\s/g, '');
 
+            const headers = await this._getAuthHeaders();
+            
             const { data, error } = await supabase.functions.invoke('market-data', {
-                body: { tickers: cleanTicker }
+                body: { tickers: cleanTicker },
+                headers: headers
             });
 
             if (error || !data || !data.results) {
@@ -64,7 +82,7 @@ export const AssetService = {
         }
     },
 
-    // 3. ATUALIZADO: Valida ticker usando a Edge Function
+    // 3. Valida ticker usando a Edge Function
     async validateTicker(ticker) {
         if (!ticker) return false;
         try {
@@ -75,7 +93,7 @@ export const AssetService = {
         }
     },
 
-    // 4. ATUALIZADO: getPrice agora utiliza a lógica segura
+    // 4. getPrice usa a lógica segura em lote
     async getPrice(ticker) {
         try {
             const data = await this.getMarketPrices(ticker);
