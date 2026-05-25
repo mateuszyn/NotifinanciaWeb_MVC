@@ -1,5 +1,5 @@
 import { TickerDictionary } from '../models/TickerDictionary.js';
-import { Security } from '../services/security.js'; // Importando o nosso escudo
+import { Security } from '../services/security.js'; 
 
 export const AddAssetView = {
     render() {
@@ -22,7 +22,7 @@ export const AddAssetView = {
                         <div class="input-group input-group-sm">
                             <input type="number" id="quantity" 
                                    class="form-control bg-black text-white border-secondary" 
-                                   placeholder="0" required step="any" style="flex: 1.5;">
+                                   placeholder="0" step="any" style="flex: 1.5;">
                             <button type="button" class="btn btn-dark border-secondary qty-btn px-2" data-add="1">+1</button>
                             <button type="button" class="btn btn-dark border-secondary qty-btn px-2" data-add="10">+10</button>
                             <button type="button" class="btn btn-dark border-secondary qty-btn px-2" data-add="100">+100</button>
@@ -31,9 +31,14 @@ export const AddAssetView = {
 
                     <div class="col-8 col-md-3">
                         <label for="averagePrice" class="small text-secondary fw-bold mb-1">P. Médio (R$)</label>
-                        <input type="number" step="0.01" id="averagePrice" 
-                               class="form-control bg-black text-white border-secondary form-control-sm" 
-                               placeholder="0.00" required>
+                        <div class="input-group input-group-sm">
+                            <input type="number" step="0.01" id="averagePrice" 
+                                   class="form-control bg-black text-white border-secondary" 
+                                   placeholder="0.00">
+                            <button type="button" id="btn-retry-price" class="btn btn-outline-secondary px-2" title="Buscar preço novamente">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="col-4 col-md-2">
@@ -46,7 +51,6 @@ export const AddAssetView = {
             </form>
         `;
 
-        // Ativa o Autocomplete e os botões de quantidade logo após renderizar o HTML
         this.setupEventListeners();
     },
 
@@ -54,14 +58,12 @@ export const AddAssetView = {
         const tickerInput = document.querySelector('#asset-ticker');
         const suggestionsBox = document.querySelector('#ticker-suggestions');
 
-        // --- LÓGICA DO AUTOCOMPLETE BLINDADO ---
         if (tickerInput && suggestionsBox) {
             tickerInput.addEventListener('input', (e) => {
                 const query = e.target.value;
                 const results = TickerDictionary.search(query);
 
                 if (results.length > 0 && query.length >= 2) {
-                    // BLINDAGEM: Sanitizamos cada item sugerido antes de injetar no <li>
                     suggestionsBox.innerHTML = results.map(t => {
                         const safeSuggestedTicker = Security.escapeHTML(t);
                         return `<li><a class="dropdown-item text-white border-bottom border-secondary py-2 cursor-pointer hover-bg-light" href="#">${safeSuggestedTicker}</a></li>`;
@@ -69,13 +71,11 @@ export const AddAssetView = {
                     
                     suggestionsBox.style.display = 'block';
 
-                    // Adiciona o clique para cada sugestão preencher o input
                     suggestionsBox.querySelectorAll('.dropdown-item').forEach(item => {
                         item.addEventListener('click', (ev) => {
                             ev.preventDefault();
-                            tickerInput.value = ev.target.innerText; // Preenche o campo
-                            suggestionsBox.style.display = 'none'; // Esconde a lista
-                            // Força o disparo da busca avisando o AssetController que o ativo foi escolhido
+                            tickerInput.value = ev.target.innerText; 
+                            suggestionsBox.style.display = 'none'; 
                             tickerInput.dispatchEvent(new Event('focusout', { bubbles: true }));
                         });
                     });
@@ -84,7 +84,6 @@ export const AddAssetView = {
                 }
             });
 
-            // Esconde a lista se clicar fora
             document.addEventListener('click', (e) => {
                 if (!tickerInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
                     suggestionsBox.style.display = 'none';
@@ -92,7 +91,6 @@ export const AddAssetView = {
             });
         }
 
-        // --- LÓGICA DOS BOTÕES RÁPIDOS DE QUANTIDADE (+1, +10, +100) ---
         const qtyInput = document.querySelector('#quantity');
         const qtyBtns = document.querySelectorAll('.qty-btn');
 

@@ -6,7 +6,6 @@ import { supabase } from '../services/supabaseClient.js';
 import { TickerDictionary } from '../models/TickerDictionary.js';
 
 export const AssetController = {
-    // 1. ESTADO LOCAL (O Cérebro da Micro-renderização)
     state: {
         assets: [],
         user: null,
@@ -73,7 +72,6 @@ export const AssetController = {
         }
     },
 
-    // 2. FUNÇÃO DE MICRO-RENDERIZAÇÃO
     renderLocalState() {
         const sortedAssets = this.sortAssets(this.state.assets, this.state.user.sort_by);
         AssetView.render(sortedAssets, this.state.user);
@@ -97,7 +95,6 @@ export const AssetController = {
         }
     },
 
-    // --- FUNÇÕES DE ALERTA MODERNAS (SWEETALERT2) ---
     showLoading(message) {
         Swal.fire({
             title: message,
@@ -126,15 +123,53 @@ export const AssetController = {
         });
     },
 
-    // 3. DELEGAÇÃO DE EVENTOS
     setupDelegatedEvents() {
         const appContainer = document.querySelector('#app');
         if (!appContainer) return;
 
-        // --- Cliques Genéricos ---
         appContainer.addEventListener('click', async (e) => {
             
-            // EXCLUSÃO (Com SweetAlert)
+            // --- NOVO: BOTÃO DE RECARREGAR PREÇO ---
+            const btnRetryPrice = e.target.closest('#btn-retry-price');
+            if (btnRetryPrice) {
+                const tickerInput = document.querySelector('#asset-ticker');
+                const priceInput = document.querySelector('#averagePrice');
+                const ticker = tickerInput ? tickerInput.value.toUpperCase().trim() : '';
+                
+                if (ticker && ticker.length >= 4) {
+                    const originalPlaceholder = priceInput.placeholder;
+                    priceInput.value = ''; // Limpa o valor antigo
+                    priceInput.placeholder = "Buscando...";
+                    priceInput.disabled = true; 
+                    
+                    try {
+                        const data = await AssetService.getPrice(ticker);
+                        if (data && data.price > 0) {
+                            priceInput.value = data.price.toFixed(2);
+                        } else {
+                            // Se falhar, avisa pelo Toast e deixa o usuário digitar
+                            Swal.fire({
+                                toast: true,
+                                position: 'top-end',
+                                icon: 'warning',
+                                title: 'Preço não encontrado. Digite manualmente.',
+                                showConfirmButton: false,
+                                timer: 3000
+                            });
+                        }
+                    } catch (err) {
+                        console.error("Erro ao forçar busca de preço:", err);
+                    } finally {
+                        priceInput.placeholder = originalPlaceholder;
+                        priceInput.disabled = false;
+                        priceInput.focus(); // Devolve o foco para facilitar a digitação manual
+                    }
+                } else {
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Digite um Ticker primeiro.', showConfirmButton: false, timer: 2000 });
+                }
+                return;
+            }
+
             const btnDelete = e.target.closest('.btn-delete');
             if (btnDelete) {
                 const idDoAtivo = btnDelete.dataset.id;
@@ -164,7 +199,6 @@ export const AssetController = {
                 return;
             }
 
-            // ABRIR MODAL EDIÇÃO
             const btnEdit = e.target.closest('.btn-edit');
             if (btnEdit) {
                 document.querySelector('#update-id').value = btnEdit.dataset.id;
@@ -175,7 +209,6 @@ export const AssetController = {
                 return;
             }
 
-            // FECHAR MODAL
             const overlay = document.querySelector('#update-modal-overlay');
             const btnCloseModal = e.target.closest('#btn-close-modal');
             if (btnCloseModal || e.target === overlay) {
@@ -183,7 +216,6 @@ export const AssetController = {
                 return;
             }
 
-            // TOGGLE NOTIFICAÇÕES (Com Toast do SweetAlert)
             const btnNotif = e.target.closest('#btn-toggle-notif');
             if (btnNotif) {
                 const icon = btnNotif.querySelector('i');
@@ -211,7 +243,6 @@ export const AssetController = {
                 return;
             }
 
-            // LOGOUT
             if (e.target.closest('#btn-logout')) {
                 await AuthService.signOut();
                 window.location.reload();
@@ -219,7 +250,6 @@ export const AssetController = {
             }
         });
 
-        // --- Filtros e Corretoras ---
         appContainer.addEventListener('change', async (e) => {
             const sortSelect = e.target.closest('#sort-select');
             if (sortSelect) {
@@ -246,10 +276,7 @@ export const AssetController = {
             }
         });
 
-        // --- Formulários (Submit) ---
         appContainer.addEventListener('submit', async (e) => {
-            
-            // SALVAR EDIÇÃO COM FEEDBACK E VALIDAÇÃO MANUAL
             const formUpdate = e.target.closest('#form-update-asset');
             if (formUpdate) {
                 e.preventDefault();
@@ -289,7 +316,6 @@ export const AssetController = {
                 return;
             }
 
-            // ADICIONAR NOVO ATIVO COM FEEDBACK E VALIDAÇÃO MANUAL
             const formCreate = e.target.closest('#form-asset');
             if (formCreate) {
                 e.preventDefault();
@@ -302,7 +328,6 @@ export const AssetController = {
                 const qtyValue = qtyInput ? qtyInput.value : '';
                 const priceValue = priceInput ? priceInput.value : '';
 
-                // VALIDAÇÃO MANUAL INTELIGENTE (Ignora os "required" problemáticos do HTML)
                 if (!tickerValue || !qtyValue || !priceValue) {
                     this.showError('Por favor, preencha o Ticker, a Quantidade e o Preço Médio.');
                     return;
@@ -343,7 +368,6 @@ export const AssetController = {
 
                     document.querySelector('#add-asset-drawer')?.classList.add('collapsed');
                     
-                    // Limpa os campos após salvar
                     if (tickerInput) tickerInput.value = '';
                     if (qtyInput) qtyInput.value = '';
                     if (priceInput) priceInput.value = '';
@@ -356,7 +380,6 @@ export const AssetController = {
             }
         });
 
-        // --- Perda de foco para autocompletar preço ---
         appContainer.addEventListener('focusout', async (e) => {
             if (e.target && e.target.id === 'asset-ticker') {
                 const ticker = e.target.value.toUpperCase().trim();
