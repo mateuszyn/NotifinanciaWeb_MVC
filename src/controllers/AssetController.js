@@ -249,14 +249,23 @@ export const AssetController = {
         // --- Formulários (Submit) ---
         appContainer.addEventListener('submit', async (e) => {
             
-            // SALVAR EDIÇÃO COM FEEDBACK
+            // SALVAR EDIÇÃO COM FEEDBACK E VALIDAÇÃO MANUAL
             const formUpdate = e.target.closest('#form-update-asset');
             if (formUpdate) {
                 e.preventDefault();
+                
                 const id = document.querySelector('#update-id').value;
+                const qtyInput = document.querySelector('#update-quantity');
+                const priceInput = document.querySelector('#update-averagePrice');
+
+                if (!qtyInput.value || !priceInput.value) {
+                    this.showError('Por favor, preencha a quantidade e o preço médio.');
+                    return;
+                }
+
                 const data = {
-                    quantity: Number(document.querySelector('#update-quantity').value),
-                    averagePrice: parseFloat(document.querySelector('#update-averagePrice').value)
+                    quantity: Number(qtyInput.value),
+                    averagePrice: parseFloat(priceInput.value)
                 };
                 
                 this.showLoading('Atualizando ativo...');
@@ -280,12 +289,24 @@ export const AssetController = {
                 return;
             }
 
-            // ADICIONAR NOVO ATIVO COM FEEDBACK
+            // ADICIONAR NOVO ATIVO COM FEEDBACK E VALIDAÇÃO MANUAL
             const formCreate = e.target.closest('#form-asset');
             if (formCreate) {
                 e.preventDefault();
+                
                 const tickerInput = document.querySelector('#asset-ticker');
+                const qtyInput = document.querySelector('#quantity');
+                const priceInput = document.querySelector('#averagePrice');
+                
                 const tickerValue = tickerInput ? tickerInput.value.toUpperCase().trim() : '';
+                const qtyValue = qtyInput ? qtyInput.value : '';
+                const priceValue = priceInput ? priceInput.value : '';
+
+                // VALIDAÇÃO MANUAL INTELIGENTE (Ignora os "required" problemáticos do HTML)
+                if (!tickerValue || !qtyValue || !priceValue) {
+                    this.showError('Por favor, preencha o Ticker, a Quantidade e o Preço Médio.');
+                    return;
+                }
 
                 this.showLoading('Buscando e validando ativo...');
 
@@ -298,7 +319,7 @@ export const AssetController = {
 
                     const isValid = await AssetService.validateTicker(tickerValue);
                     if (!isValid) {
-                        this.showError(`O ticker "${tickerValue}" não foi encontrado.`);
+                        this.showError(`O ticker "${tickerValue}" não foi encontrado na B3.`);
                         return;
                     }
 
@@ -310,8 +331,8 @@ export const AssetController = {
 
                     const newAsset = {
                         ticker: tickerValue,
-                        quantity: Number(document.querySelector('#quantity').value),
-                        averagePrice: parseFloat(document.querySelector('#averagePrice').value)
+                        quantity: Number(qtyValue),
+                        averagePrice: parseFloat(priceValue)
                     };
 
                     await AssetService.addAsset(newAsset);
@@ -322,6 +343,11 @@ export const AssetController = {
 
                     document.querySelector('#add-asset-drawer')?.classList.add('collapsed');
                     
+                    // Limpa os campos após salvar
+                    if (tickerInput) tickerInput.value = '';
+                    if (qtyInput) qtyInput.value = '';
+                    if (priceInput) priceInput.value = '';
+
                     await this.init();
                     this.showSuccess(`${tickerValue} adicionado com sucesso!`);
                 } catch (error) {
