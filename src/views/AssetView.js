@@ -4,9 +4,11 @@ export const AssetView = {
     render(assets, user) {
         const app = document.querySelector('#app');
         
-        // Blindagem 1: Sanitiza o nome ou e-mail do usuário
+        // --- NOVO: Extração e Formatação do Primeiro Nome ---
         const rawUserName = user.user_metadata?.full_name || user.email.split('@')[0];
-        const userName = Security.escapeHTML(rawUserName);
+        const firstNameRaw = rawUserName.split(' ')[0].toLowerCase();
+        const firstName = firstNameRaw.charAt(0).toUpperCase() + firstNameRaw.slice(1);
+        const userName = Security.escapeHTML(firstName);
         
         const BROKERS = {
             'Nubank': { color: '#820AD1', textColor: '#FFFFFF', url: 'https://play.google.com/store/apps/details?id=com.nu.production' },
@@ -20,7 +22,9 @@ export const AssetView = {
 
         const isNotifActive = user.notifications_enabled;
         const bellIcon = isNotifActive ? 'bi-bell-fill text-warning' : 'bi-bell text-secondary';
-        const bellTitle = isNotifActive ? "Notificações Diárias (18h) Ativadas" : "Notificações Diárias (18h) Desativadas";
+        const tooltipMessage = isNotifActive 
+            ? "Notificações Diárias Ativas (18h)" 
+            : "Ative o sininho para receber relatório diário da carteira";
 
         const cardsHtml = assets.map(asset => {
             const profitPct = asset.variacaoPM || 0;
@@ -32,10 +36,8 @@ export const AssetView = {
             if (profitPct > 0) borderClass = dailyChange >= 0 ? 'border-profit-viva-pos' : 'border-profit-dia-neg';
             else if (profitPct < 0) borderClass = dailyChange >= 0 ? 'border-loss-dia-pos' : 'border-loss-viva-neg';
 
-            // Blindagem 2: Sanitiza o ticker vindo do banco de dados
             const safeTicker = Security.escapeHTML(asset.ticker);
 
-            // Se for visitante, mostra uma tag "Exemplo". Se for usuário real, mostra Lixeira e Lápis.
             const actionButtons = user.isGuest 
                 ? `<span class="badge bg-secondary">Dados de Exemplo</span>`
                 : `<button class="btn btn-link p-0 text-primary btn-edit" data-id="${asset.id}" data-ticker="${safeTicker}" data-qty="${asset.quantity}" data-price="${asset.averagePrice}">
@@ -108,8 +110,11 @@ export const AssetView = {
                     </div>
 
                     <div class="d-flex align-items-center justify-content-center gap-3 actions-container">
-                        <button id="btn-toggle-notif" class="btn btn-link p-0 shadow-none border-0" ${user.isGuest ? 'disabled' : ''}>
-                            <i class="${bellIcon} fs-4" title="${bellTitle}"></i>
+                        <button id="btn-toggle-notif" class="btn btn-link p-0 shadow-none border-0" ${user.isGuest ? 'disabled' : ''}
+                                data-bs-toggle="tooltip" 
+                                data-bs-placement="bottom" 
+                                title="${tooltipMessage}">
+                            <i class="${bellIcon} fs-4"></i>
                         </button>
                         <span class="text-secondary d-none d-md-block small">
                             Olá, <b class="text-white">${user.isGuest ? 'Visitante' : userName}</b>
@@ -142,11 +147,9 @@ export const AssetView = {
             ${user.isGuest ? '' : this.renderUpdateModal()}
         `;
 
-        // Lógica de Ordenação
         const sortSelect = document.querySelector('#sort-select');
         if (sortSelect && user.sort_by) sortSelect.value = user.sort_by;
 
-        // Lógica da Corretora (Visual e Dinâmica) - Somente para usuários logados
         const brokerSelect = document.querySelector('#broker-select');
         if (brokerSelect && !user.isGuest) {
             brokerSelect.addEventListener('change', (e) => {
@@ -160,7 +163,6 @@ export const AssetView = {
             });
         }
 
-        // Lógica da Gaveta - Somente para usuários logados
         const drawer = document.querySelector('#add-asset-drawer');
         const drawerHeader = document.querySelector('#drawer-toggle');
         
