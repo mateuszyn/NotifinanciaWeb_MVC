@@ -131,6 +131,17 @@ export const AssetView = {
 
             <div class="container mt-4 mb-5 pb-5">
                 <div class="row" id="asset-list">${cardsHtml}</div>
+                
+                ${user.isGuest ? '' : `
+                <div class="text-center mt-4 mb-5">
+                    <button onclick="window.open('https://gemini.google.com/', '_blank')" class="btn btn-primary rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm" style="background-color: #1a73e8; border: none;">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                            <path d="M12 2c-.3 0-.5.2-.6.5L9.2 8.7 3.5 10.9c-.3.1-.5.3-.5.6s.2.5.5.6l5.7 2.2 2.2 5.7c.1.3.3.5.6.5s.5-.2.6-.5l2.2-5.7 5.7-2.2c.3-.1.5-.3.5-.6s-.2-.5-.5-.6l-5.7-2.2-2.2-5.7c-.1-.3-.3-.5-.6-.5z"/>
+                        </svg>
+                        Pergunte ao Gemini
+                    </button>
+                </div>
+                `}
             </div>
 
             ${user.isGuest ? '' : `
