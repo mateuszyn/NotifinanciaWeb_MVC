@@ -1,8 +1,17 @@
 from fastapi import FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware
 import yfinance as yf
 from datetime import datetime, timezone
 
 app = FastAPI(title="Notifinancia Market Data API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def _format_ex_dividend_date(value):
