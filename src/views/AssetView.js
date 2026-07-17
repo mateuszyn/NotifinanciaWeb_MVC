@@ -78,11 +78,12 @@ export const AssetView = {
 
             const actionButtons = user.isGuest 
                 ? `<span class="badge bg-secondary">Dados de Exemplo</span>`
-                : `<button class="btn btn-link p-0 text-primary btn-edit" data-id="${asset.id}" data-ticker="${safeTicker}" data-qty="${asset.quantity}" data-price="${asset.averagePrice}">
-                       <i class="bi bi-pencil-square fs-4"></i>
+                : `
+                   <button class="btn btn-link p-0 btn-edit edit-btn-wrapper" data-id="${asset.id}" data-ticker="${safeTicker}" data-qty="${asset.quantity}" data-price="${asset.averagePrice}" aria-label="Editar / Aporte">
+                       <span class="edit-icon"><i class="bi bi-pencil text-primary fs-4"></i></span>
                    </button>
                    <button class="btn btn-link p-0 text-danger btn-delete" data-id="${asset.id}">
-                       <i class="bi bi-trash3 fs-4"></i>
+                       <i class="bi bi-trash3 trash-icon fs-4"></i>
                    </button>`;
 
             return `
@@ -258,12 +259,26 @@ export const AssetView = {
                     <form id="form-update-asset">
                         <input type="hidden" id="update-id">
                         <div class="form-group mb-3">
-                            <label class="small text-secondary fw-bold mb-1">Quantidade</label>
-                            <input type="number" id="update-quantity" class="form-control bg-black text-white border-secondary" required step="any">
-                        </div>
+                                <label class="small text-secondary fw-bold mb-1">Quantidade</label>
+                                <input type="number" id="update-quantity" class="form-control bg-black text-white border-secondary" required step="any">
+                                <div class="d-flex gap-2 mt-2">
+                                    <button type="button" class="btn btn-outline-danger btn-sm btn-quick-qty" data-val="-100">-100</button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm btn-quick-qty" data-val="-10">-10</button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm btn-quick-qty" data-val="-1">-1</button>
+                                    <button type="button" class="btn btn-outline-success btn-sm btn-quick-qty" data-val="1">+1</button>
+                                    <button type="button" class="btn btn-outline-success btn-sm btn-quick-qty" data-val="10">+10</button>
+                                    <button type="button" class="btn btn-outline-success btn-sm btn-quick-qty" data-val="100">+100</button>
+                                </div>
+                            </div>
                         <div class="form-group mb-4">
                             <label class="small text-secondary fw-bold mb-1">Preço Médio (R$)</label>
                             <input type="number" id="update-averagePrice" class="form-control bg-black text-white border-secondary" required step="0.01">
+                            <div class="d-flex gap-2 mt-2">
+                                <button type="button" class="btn btn-outline-danger btn-sm btn-quick-price" data-val="-0.1">-0,10</button>
+                                <button type="button" class="btn btn-outline-danger btn-sm btn-quick-price" data-val="-0.01">-0,01</button>
+                                <button type="button" class="btn btn-outline-success btn-sm btn-quick-price" data-val="0.01">+0,01</button>
+                                <button type="button" class="btn btn-outline-success btn-sm btn-quick-price" data-val="0.1">+0,10</button>
+                            </div>
                         </div>
                         <div class="d-flex gap-3 mt-4">
                             <button type="button" id="btn-close-modal" class="btn btn-outline-secondary flex-grow-1 fw-bold py-2">Cancelar</button>

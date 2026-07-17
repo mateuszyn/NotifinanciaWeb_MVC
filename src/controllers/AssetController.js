@@ -182,6 +182,37 @@ export const AssetController = {
                 return;
             }
 
+            // Quick quantity buttons in update modal (+1, -1, +10, -10)
+            const btnQuickQty = e.target.closest('.btn-quick-qty');
+            if (btnQuickQty) {
+                const delta = Number(btnQuickQty.dataset.val) || 0;
+                const qtyInput = document.querySelector('#update-quantity');
+                if (!qtyInput) return;
+                let current = Number(qtyInput.value) || 0;
+                current = current + delta;
+                if (current < 0) current = 0;
+                qtyInput.value = current;
+                qtyInput.dispatchEvent(new Event('input', { bubbles: true }));
+                return;
+            }
+
+            // Quick price buttons in update modal (R$ adjustments)
+            const btnQuickPrice = e.target.closest('.btn-quick-price');
+            if (btnQuickPrice) {
+                const deltaRaw = btnQuickPrice.dataset.val;
+                if (typeof deltaRaw === 'undefined') return;
+                const delta = parseFloat(String(deltaRaw).replace(',', '.')) || 0;
+                const priceInput = document.querySelector('#update-averagePrice');
+                if (!priceInput) return;
+                let current = parseFloat(priceInput.value) || 0;
+                current = current + delta;
+                if (current < 0) current = 0;
+                // Keep two decimal places
+                priceInput.value = current.toFixed(2);
+                priceInput.dispatchEvent(new Event('input', { bubbles: true }));
+                return;
+            }
+
             const btnDelete = e.target.closest('.btn-delete');
             if (btnDelete) {
                 const idDoAtivo = btnDelete.dataset.id;
@@ -198,9 +229,7 @@ export const AssetController = {
                     const nextMonth = new Date(today.getFullYear(), today.getMonth() + 2, 0);
                     let dayOfWeek = nextMonth.getDay();
                     
-                    // Se for domingo (0), volta 2 dias (para sexta)
                     if (dayOfWeek === 0) nextMonth.setDate(nextMonth.getDate() - 2);
-                    // Se for sábado (6), volta 1 dia (para sexta)
                     else if (dayOfWeek === 6) nextMonth.setDate(nextMonth.getDate() - 1);
                     
                     const day = String(nextMonth.getDate()).padStart(2, '0');
@@ -209,14 +238,16 @@ export const AssetController = {
                     return `${day}/${month}/${year}`;
                 };
 
-                // Verifica se é FII (ticker termina em '11')
+                // Verifica se é FII (ticker termina em '11') e calcula lucro/prejuízo
                 const isFII = asset.ticker.endsWith('11');
                 const lucro = (asset.currentPrice - asset.averagePrice) * asset.quantity;
                 const temLucro = lucro > 0;
+                const temPrejuizo = lucro < 0;
 
-                // Se for FII e houver lucro, calcula imposto e exibe alerta customizado
                 let alertConfig;
+
                 if (isFII && temLucro) {
+                    // Mantém comportamento existente para FIIs com lucro (imposto)
                     const imposto = lucro * 0.20;
                     const lucroFormatado = lucro.toFixed(2).replace('.', ',');
                     const impostoFormatado = imposto.toFixed(2).replace('.', ',');
@@ -224,7 +255,7 @@ export const AssetController = {
 
                     alertConfig = {
                         title: 'Atenção: Imposto Devido',
-                        icon: 'info',
+                        icon: 'warning',
                         html: `
     <div class="mb-3">
         Lucro apurado: <b>R$ ${lucroFormatado}</b><br>
@@ -233,7 +264,6 @@ export const AssetController = {
     <div class="text-start">
         <p class="small text-secondary mb-2"><b>1.</b> Efetue a venda na sua corretora.</p>
         <p class="small text-secondary mb-1"><b>2.</b> Acesse o <a href="https://sicalc.receita.economia.gov.br/sicalc/principal" target="_blank" class="fw-bold text-primary text-decoration-underline">SicalcWeb <i class="bi bi-box-arrow-up-right"></i></a> e siga o caminho:</p>
-        
         <div class="p-2 rounded mb-2" style="background-color: rgba(255,255,255,0.05); border: 1px dashed #6c757d; font-size: 0.75rem;">
             <i class="bi bi-arrow-return-right text-success"></i> Preenchimento rápido<br>
             <i class="bi bi-arrow-return-right text-success"></i> Pessoa Física (CPF)<br>
@@ -246,7 +276,7 @@ export const AssetController = {
                         allowOutsideClick: false,
                         allowEscapeKey: false,
                         showCancelButton: true,
-                        confirmButtonColor: '#d33',
+                        confirmButtonColor: '#dc3545',
                         confirmButtonText: 'Sim, remover da carteira',
                         cancelButtonText: 'Cancelar',
                         preConfirm: async () => {
@@ -255,7 +285,7 @@ export const AssetController = {
                                 await AssetService.deleteAsset(idDoAtivo);
                                 this.state.assets = this.state.assets.filter(a => a.id != idDoAtivo);
                                 this.renderLocalState();
-                                
+
                                 Swal.hideLoading();
                                 Swal.update({
                                     title: 'Ativo Removido!',
@@ -263,12 +293,12 @@ export const AssetController = {
                                     showConfirmButton: false,
                                     showCancelButton: false
                                 });
-                                
+
                                 const confirmBtn = Swal.getConfirmButton();
                                 const cancelBtn = Swal.getCancelButton();
                                 if (confirmBtn) confirmBtn.style.display = 'none';
                                 if (cancelBtn) cancelBtn.style.display = 'none';
-                                
+
                                 return false;
                             } catch (error) {
                                 Swal.showValidationMessage('Erro ao deletar: ' + error.message);
@@ -276,14 +306,64 @@ export const AssetController = {
                             }
                         }
                     };
+
+                } else if (isFII && temPrejuizo) {
+                    // Novo alerta para FIIs vendidos com prejuízo
+                    const prejuizoFormatado = Math.abs(lucro).toFixed(2).replace('.', ',');
+                    alertConfig = {
+                        title: 'Venda com Prejuízo (Sem Imposto)',
+                        icon: 'info',
+                        html: `
+    <div class="mb-3">
+        Prejuízo apurado: <b class="text-danger">R$ ${prejuizoFormatado}</b>
+    </div>
+    <div class="text-start">
+        <p class="small text-secondary mb-2">Como a operação gerou prejuízo, não há DARF a pagar sobre essa venda.</p>
+        <p class="small text-secondary mb-1">Recomendamos anotar este prejuízo para abater de futuros lucros com FIIs na sua declaração anual.</p>
+    </div>
+`,
+                        showCloseButton: true,
+                        allowOutsideClick: false,
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc3545',
+                        confirmButtonText: 'Entendi, remover ativo',
+                        cancelButtonText: 'Cancelar',
+                        preConfirm: async () => {
+                            Swal.showLoading();
+                            try {
+                                await AssetService.deleteAsset(idDoAtivo);
+                                this.state.assets = this.state.assets.filter(a => a.id != idDoAtivo);
+                                this.renderLocalState();
+
+                                Swal.hideLoading();
+                                Swal.update({
+                                    title: 'Ativo Removido!',
+                                    icon: 'success',
+                                    showConfirmButton: false,
+                                    showCancelButton: false
+                                });
+
+                                const confirmBtn = Swal.getConfirmButton();
+                                const cancelBtn = Swal.getCancelButton();
+                                if (confirmBtn) confirmBtn.style.display = 'none';
+                                if (cancelBtn) cancelBtn.style.display = 'none';
+
+                                return false;
+                            } catch (error) {
+                                Swal.showValidationMessage('Erro ao deletar: ' + error.message);
+                                return false;
+                            }
+                        }
+                    };
+
                 } else {
-                    // Alerta padrão para ações ou FIIs sem lucro
+                    // Alerta padrão para ações ou FIIs empatados
                     alertConfig = {
                         title: 'Excluir Ativo?',
                         text: "Você não poderá reverter isso!",
                         icon: 'warning',
                         showCancelButton: true,
-                        confirmButtonColor: '#d33',
+                        confirmButtonColor: '#dc3545',
                         cancelButtonColor: '#6c757d',
                         confirmButtonText: 'Sim, excluir!',
                         cancelButtonText: 'Cancelar'
@@ -291,11 +371,11 @@ export const AssetController = {
                 }
 
                 Swal.fire(alertConfig).then(async (result) => {
-                    // Para FIIs com lucro, o preConfirm já trata tudo. Não faz nada aqui.
-                    if (isFII && temLucro) {
+                    // Para FIIs com lucro ou prejuízo, o preConfirm já trata a exclusão.
+                    if ((isFII && temLucro) || (isFII && temPrejuizo)) {
                         return;
                     }
-                    
+
                     // Para outros ativos, processa a exclusão após confirmação
                     if (result.isConfirmed) {
                         this.showLoading('Excluindo ativo...');
