@@ -37,6 +37,10 @@ export const AssetView = {
             else if (profitPct < 0) borderClass = dailyChange >= 0 ? 'border-loss-dia-pos' : 'border-loss-viva-neg';
 
             const safeTicker = Security.escapeHTML(asset.ticker);
+            
+            const yieldPct = asset.yieldpct || 0;
+            const divMensal = asset.divMensal || 0;
+            const divAnual = asset.divAnual || 0;
 
             const actionButtons = user.isGuest 
                 ? `<span class="badge bg-secondary">Dados de Exemplo</span>`
@@ -56,14 +60,16 @@ export const AssetView = {
                                 ${actionButtons}
                             </div>
                         </div>
+                        
                         <div class="row mb-3">
                             <div class="col-12">
                                 <p class="price-value mb-0">Total: R$ ${(asset.quantity * asset.currentPrice).toFixed(2)}</p>
                                 <p class="small text-secondary fw-bold">QTD: ${asset.quantity}</p>
                             </div>
                         </div>
-                        <div class="row border-top pt-2">
-                            <div class="col-6 border-end">
+                        
+                        <div class="row border-top border-bottom border-secondary py-2 mb-3">
+                            <div class="col-6 border-end border-secondary">
                                 <p class="price-label">P. Médio</p>
                                 <p class="price-value">R$ ${asset.averagePrice.toFixed(2)} <span class="${profitTextClass} small">(${profitPct.toFixed(2)}%)</span></p>
                             </div>
@@ -73,7 +79,21 @@ export const AssetView = {
                             </div>
                         </div>
                         
-                        <a href="${brokerInfo.url}" target="_blank" class="btn w-100 mt-3 d-flex align-items-center justify-content-center gap-2" 
+                        <div class="row bg-dark rounded p-2 text-center border border-secondary mb-3 mx-0">
+                            <div class="col-12 mb-1">
+                                <span class="badge bg-success mb-2">Yield Anual: ${yieldPct.toFixed(2)}%</span>
+                            </div>
+                            <div class="col-6 border-end border-secondary">
+                                <p class="small text-secondary fw-bold mb-0">Renda Mensal</p>
+                                <p class="fw-bold text-success mb-0">R$ ${divMensal.toFixed(2)}</p>
+                            </div>
+                            <div class="col-6">
+                                <p class="small text-secondary fw-bold mb-0">Renda Anual</p>
+                                <p class="fw-bold text-success mb-0">R$ ${divAnual.toFixed(2)}</p>
+                            </div>
+                        </div>
+                        
+                        <a href="${brokerInfo.url}" target="_blank" class="btn w-100 d-flex align-items-center justify-content-center gap-2" 
                            style="background-color: ${brokerInfo.color}; color: ${brokerInfo.textColor}; border: none; font-weight: bold; border-radius: 8px; height: 45px;">
                            <i class="bi bi-box-arrow-up-right"></i> Operar na ${currentBroker}
                         </a>

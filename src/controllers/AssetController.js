@@ -30,22 +30,27 @@ export const AssetController = {
         const userAssets = await AssetService.getAssets();
 
         if (userAssets.length > 0) {
-            const allTickers = userAssets.map(a => a.ticker);
+            const allTickers = userAssets.map(asset => `${asset.ticker.replace(/\.SA$/i, '')}.SA`);
+            let apiResults = {};
 
-            const marketData = await AssetService.getMarketPrices(allTickers);
-            
-            const livePrices = {};
-            if (marketData.results) {
-                marketData.results.forEach(res => {
-                    livePrices[res.symbol] = res;
-                });
+            try {
+                const response = await fetch(`https://notifinancia-api.onrender.com/market-data?tickers=${allTickers.join(',')}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    apiResults = data.results || {};
+                }
+            } catch (error) {
+                console.error('Erro ao buscar dados da API de mercado:', error);
             }
 
             const enrichedAssets = userAssets.map(asset => {
-                const live = livePrices[asset.ticker] || { regularMarketPrice: 0, regularMarketChangePercent: 0 };
-                
-                const currentPrice = live.regularMarketPrice || 0;
-                const dailyChange = live.regularMarketChangePercent || 0;
+                const normalizedTicker = asset.ticker.replace(/\.SA$/i, '').replace(/\.sa$/i, '').toUpperCase();
+                const apiAsset = apiResults[normalizedTicker] || {};
+                const currentPrice = apiAsset.price ?? asset.averagePrice ?? 0;
+                const dailyChange = apiAsset.changePercent ?? 0;
+                const yieldpct = apiAsset.yieldpct ?? 0;
+                const divAnual = currentPrice * (yieldpct / 100) * asset.quantity;
+                const divMensal = divAnual / 12;
                 const variacaoPM = asset.averagePrice > 0 
                     ? ((currentPrice / asset.averagePrice) - 1) * 100 
                     : 0;
@@ -55,7 +60,10 @@ export const AssetController = {
                     currentPrice,
                     dailyChange,
                     variacaoPM,
-                    totalValue: currentPrice * asset.quantity
+                    totalValue: currentPrice * asset.quantity,
+                    yieldpct,
+                    divAnual,
+                    divMensal
                 };
             });
 
