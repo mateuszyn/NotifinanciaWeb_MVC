@@ -42,6 +42,30 @@ export const AssetView = {
             const divMensal = asset.divMensal || 0;
             const divAnual = asset.divAnual || 0;
 
+            let dividendContent = `
+                <div class="d-flex justify-content-around">
+                    <div>
+                        <p class="small text-secondary mb-0">Renda Mensal</p>
+                        <p class="fw-bold mb-0 text-white">R$ ${divMensal.toFixed(2)}</p>
+                    </div>
+                    <div>
+                        <p class="small text-secondary mb-0">Renda Anual</p>
+                        <p class="fw-bold mb-0 text-white">R$ ${divAnual.toFixed(2)}</p>
+                    </div>
+                </div>
+            `;
+
+            if (yieldPct === 0) {
+                dividendContent = `
+                    <div class="text-center p-2">
+                        <p class="small text-warning mb-2">Não foi possível calcular dividendos.</p>
+                        <button class="btn btn-sm btn-outline-warning" onclick="window.location.reload()">
+                            <i class="bi bi-arrow-clockwise"></i> Recarregar
+                        </button>
+                    </div>
+                `;
+            }
+
             const actionButtons = user.isGuest 
                 ? `<span class="badge bg-secondary">Dados de Exemplo</span>`
                 : `<button class="btn btn-link p-0 text-primary btn-edit" data-id="${asset.id}" data-ticker="${safeTicker}" data-qty="${asset.quantity}" data-price="${asset.averagePrice}">
@@ -79,18 +103,11 @@ export const AssetView = {
                             </div>
                         </div>
                         
-                        <div class="row bg-dark rounded p-2 text-center border border-secondary mb-3 mx-0">
-                            <div class="col-12 mb-1">
-                                <span class="badge bg-success mb-2">Yield Anual: ${yieldPct.toFixed(2)}%</span>
-                            </div>
-                            <div class="col-6 border-end border-secondary">
-                                <p class="small text-secondary fw-bold mb-0">Renda Mensal</p>
-                                <p class="fw-bold text-success mb-0">R$ ${divMensal.toFixed(2)}</p>
-                            </div>
-                            <div class="col-6">
-                                <p class="small text-secondary fw-bold mb-0">Renda Anual</p>
-                                <p class="fw-bold text-success mb-0">R$ ${divAnual.toFixed(2)}</p>
-                            </div>
+                        <div class="bg-dark rounded p-2 text-center border border-secondary mb-3 mx-0">
+                            <span class="badge ${yieldPct > 0 ? 'bg-success' : 'bg-warning'} mb-2">
+                                ${yieldPct > 0 ? 'Yield Anual: ' + yieldPct.toFixed(2) + '%' : 'Sem dados de Dividendos'}
+                            </span>
+                            ${dividendContent}
                         </div>
                         
                         <a href="${brokerInfo.url}" target="_blank" class="btn w-100 d-flex align-items-center justify-content-center gap-2" 
