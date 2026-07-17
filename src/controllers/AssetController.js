@@ -26,6 +26,7 @@ export const AssetController = {
         user.preferred_broker = profile?.preferred_broker || 'Nubank'; 
 
         this.state.user = user;
+        this.renderLocalState();
 
         const userAssets = await AssetService.getAssets();
 
@@ -46,6 +47,8 @@ export const AssetController = {
             const enrichedAssets = userAssets.map(asset => {
                 const normalizedTicker = asset.ticker.replace(/\.SA$/i, '').replace(/\.sa$/i, '').toUpperCase();
                 const apiAsset = apiResults[normalizedTicker] || {};
+                const hasApiData = Boolean(apiAsset && Object.keys(apiAsset).length > 0);
+                const hasMeaningfulValues = hasApiData && (Number(apiAsset.price) > 0 || Number(apiAsset.changePercent) !== 0 || Number(apiAsset.yieldpct) > 0);
                 const currentPrice = apiAsset.price ?? asset.averagePrice ?? 0;
                 const dailyChange = apiAsset.changePercent ?? 0;
                 const yieldpct = apiAsset.yieldpct ?? 0;
@@ -63,7 +66,8 @@ export const AssetController = {
                     totalValue: currentPrice * asset.quantity,
                     yieldpct,
                     divAnual,
-                    divMensal
+                    divMensal,
+                    dataError: !hasMeaningfulValues
                 };
             });
 
@@ -305,6 +309,65 @@ export const AssetController = {
                         }
                     }
                 });
+                return;
+            }
+
+            const btnRetryAsset = e.target.closest('.btn-retry-asset');
+            if (btnRetryAsset) {
+                const ticker = btnRetryAsset.dataset.ticker;
+                if (!ticker) return;
+
+                const assetIndex = this.state.assets.findIndex(asset => asset.ticker.toUpperCase() === ticker.toUpperCase());
+                if (assetIndex === -1) return;
+
+                const button = btnRetryAsset;
+                button.disabled = true;
+                button.innerHTML = '<i class="bi bi-arrow-repeat"></i> Carregando...';
+
+                try {
+                    const data = await AssetService.getMarketPrices([ticker]);
+                    const result = data.results?.[0] || data.results?.[ticker.toUpperCase()] || null;
+
+                    if (result && (Number(result.price) > 0 || Number(result.changePercent) !== 0 || Number(result.yieldpct) > 0)) {
+                        const asset = this.state.assets[assetIndex];
+                        const normalizedTicker = ticker.replace(/\.SA$/i, '').replace(/\.sa$/i, '').toUpperCase();
+                        const currentPrice = result.price ?? asset.averagePrice ?? 0;
+                        const dailyChange = result.changePercent ?? 0;
+                        const yieldpct = result.yieldpct ?? 0;
+                        const divAnual = currentPrice * (yieldpct / 100) * asset.quantity;
+                        const divMensal = divAnual / 12;
+                        const variacaoPM = asset.averagePrice > 0 
+                            ? ((currentPrice / asset.averagePrice) - 1) * 100 
+                            : 0;
+
+                        this.state.assets[assetIndex] = {
+                            ...asset,
+                            currentPrice,
+                            dailyChange,
+                            variacaoPM,
+                            totalValue: currentPrice * asset.quantity,
+                            yieldpct,
+                            divAnual,
+                            divMensal,
+                            dataError: false
+                        };
+                    } else {
+                        this.state.assets[assetIndex] = {
+                            ...this.state.assets[assetIndex],
+                            dataError: true
+                        };
+                    }
+
+                    this.renderLocalState();
+                } catch (error) {
+                    console.error('Erro ao recarregar ativo individual:', error);
+                    this.state.assets[assetIndex] = {
+                        ...this.state.assets[assetIndex],
+                        dataError: true
+                    };
+                    this.renderLocalState();
+                }
+
                 return;
             }
 

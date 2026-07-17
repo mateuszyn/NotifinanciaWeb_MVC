@@ -26,7 +26,7 @@ export const AssetView = {
             ? "Notificações Diárias Ativas (18h)" 
             : "Ative o sininho para receber relatório diário da carteira";
 
-        const cardsHtml = assets.map(asset => {
+        const cardsHtml = assets.length > 0 ? assets.map(asset => {
             const profitPct = asset.variacaoPM || 0;
             const dailyChange = asset.dailyChange || 0;
             const profitTextClass = profitPct >= 0 ? 'text-profit-pos' : 'text-profit-neg';
@@ -41,6 +41,7 @@ export const AssetView = {
             const yieldPct = asset.yieldpct || 0;
             const divMensal = asset.divMensal || 0;
             const divAnual = asset.divAnual || 0;
+            const showZeroVariationWarning = dailyChange === 0 && profitPct === 0;
 
             let dividendContent = `
                 <div class="d-flex justify-content-around">
@@ -55,7 +56,16 @@ export const AssetView = {
                 </div>
             `;
 
-            if (yieldPct === 0) {
+            if (asset.dataError) {
+                dividendContent = `
+                    <div class="text-center p-2">
+                        <p class="small text-warning mb-2">Não foi possível carregar os dados.</p>
+                        <button class="btn btn-sm btn-outline-warning btn-retry-asset" data-ticker="${safeTicker}">
+                            <i class="bi bi-arrow-clockwise"></i> Tentar novamente
+                        </button>
+                    </div>
+                `;
+            } else if (yieldPct === 0) {
                 dividendContent = `
                     <div class="text-center p-2">
                         <p class="small text-warning mb-2">Não foi possível calcular dividendos.</p>
@@ -99,7 +109,7 @@ export const AssetView = {
                             </div>
                             <div class="col-6 ps-3">
                                 <p class="price-label">Preço Atual</p>
-                                <p class="price-value">R$ ${asset.currentPrice.toFixed(2)} <span class="${dailyTextClass} small">(${dailyChange >= 0 ? '+' : ''}${dailyChange.toFixed(2)}%)</span></p>
+                                <p class="price-value d-flex align-items-center gap-1">R$ ${asset.currentPrice.toFixed(2)} <span class="${dailyTextClass} small">(${dailyChange >= 0 ? '+' : ''}${dailyChange.toFixed(2)}%)</span>${showZeroVariationWarning ? '<i class="bi bi-exclamation-triangle text-warning" title="Sem variação capturada. Recarregue se necessário."></i>' : ''}</p>
                             </div>
                         </div>
                         
@@ -116,7 +126,22 @@ export const AssetView = {
                         </a>
                     </div>
                 </div>`;
-        }).join('');
+        }).join('') : Array.from({ length: 6 }).map(() => `
+            <div class="col-12 col-md-6 col-lg-4 mb-4">
+                <div class="skeleton-card">
+                    <div class="skeleton-header">
+                        <div class="skeleton-line skeleton-title"></div>
+                        <div class="skeleton-circle"></div>
+                    </div>
+                    <div class="skeleton-block"></div>
+                    <div class="skeleton-row">
+                        <div class="skeleton-block"></div>
+                        <div class="skeleton-block"></div>
+                    </div>
+                    <div class="skeleton-block skeleton-block-lg mt-3"></div>
+                </div>
+            </div>
+        `).join('');
         
         app.innerHTML = `
             <header class="bg-dark px-3 py-3 border-bottom border-secondary">
