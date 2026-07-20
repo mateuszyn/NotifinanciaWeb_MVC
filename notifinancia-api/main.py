@@ -14,6 +14,11 @@ app.add_middleware(
 )
 
 
+@app.get("/ping")
+def ping():
+    return {"status": "Acordado e operando!"}
+
+
 def _format_ex_dividend_date(value):
     if value in (None, ""):
         return None
