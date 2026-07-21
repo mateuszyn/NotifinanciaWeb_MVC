@@ -51,11 +51,14 @@ export const AssetView = {
             const showZeroVariationWarning = dailyChange === 0 && profitPct === 0;
 
             let snowballMessage = `Faltam ${cotasFaltantes} cotas para a Bola de Neve (${cotasParaBolaDeNeve} cotas)`;
+            let snowballColor = '#ff8a8a';
             if (cotasParaBolaDeNeve > 0 && quantity >= cotasParaBolaDeNeve) {
                 snowballMessage = `Você atingiu a Bola de Neve! (${cotasParaBolaDeNeve} Cotas)`;
+                snowballColor = '#8fe3a7';
             } else if (cotasParaBolaDeNeve > 0 && quantity > 0 && quantity > cotasParaBolaDeNeve) {
                 const acima = quantity - cotasParaBolaDeNeve;
                 snowballMessage = `Você está ${acima} Cotas acima da Bola de Neve (${cotasParaBolaDeNeve})`;
+                snowballColor = '#8fe3a7';
             }
 
             let dividendContent = `
@@ -96,12 +99,18 @@ export const AssetView = {
             const actionButtons = user.isGuest 
                 ? `<span class="badge bg-secondary">Dados de Exemplo</span>`
                 : `
-                   <button class="btn btn-link p-0 btn-edit edit-btn-wrapper" data-id="${asset.id}" data-ticker="${safeTicker}" data-qty="${asset.quantity}" data-price="${asset.averagePrice}" aria-label="Editar / Aporte">
-                       <span class="edit-icon"><i class="bi bi-pencil text-primary fs-4"></i></span>
-                   </button>
-                   <button class="btn btn-link p-0 text-danger btn-delete" data-id="${asset.id}">
-                       <i class="bi bi-trash3 trash-icon fs-4"></i>
-                   </button>`;
+                   <span id="actions-${asset.ticker}" class="d-flex align-items-center gap-2">
+                       <!-- ÍCONE DE LOADING INJETADO AQUI (COMEÇA OCULTO) -->
+                       <i id="loading-${asset.ticker}" class="bi bi-arrow-repeat text-secondary fs-4 d-none spin-animation"></i>
+                       
+                       <button id="edit-${asset.ticker}" class="btn btn-link p-0 btn-edit edit-btn-wrapper" data-id="${asset.id}" data-ticker="${safeTicker}" data-qty="${asset.quantity}" data-price="${asset.averagePrice}" aria-label="Editar / Aporte">
+                           <span class="edit-icon"><i class="bi bi-pencil text-primary fs-4"></i></span>
+                       </button>
+                       <!-- COR DA LIXEIRA CORRIGIDA PARA VERMELHO -->
+                       <button id="delete-${asset.ticker}" class="btn btn-link p-0 text-danger btn-delete" data-id="${asset.id}">
+                           <i class="bi bi-trash3 text-danger trash-icon fs-4"></i>
+                       </button>
+                   </span>`;
 
             return `
                 <div class="col-12 col-md-6 col-lg-4 mb-4">
@@ -117,7 +126,7 @@ export const AssetView = {
                             <div class="col-12">
                                 <p class="price-value mb-0">Total: R$ ${(asset.quantity * asset.currentPrice).toFixed(2)}</p>
                                 <p class="small text-secondary fw-bold mb-1">QTD: ${asset.quantity}</p>
-                                <p class="small mb-0" style="font-size: 0.72rem; color: #8fe3a7;">
+                                <p class="small mb-0" style="font-size: 0.72rem; color: ${snowballColor};">
                                     ${snowballMessage}
                                 </p>
                             </div>

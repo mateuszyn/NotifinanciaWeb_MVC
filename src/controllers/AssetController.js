@@ -151,7 +151,7 @@ export const AssetController = {
                 if (ticker && ticker.length >= 4) {
                     const originalPlaceholder = priceInput.placeholder;
                     priceInput.value = ''; // Limpa o valor antigo
-                    priceInput.placeholder = "Buscando...";
+                    priceInput.placeholder = "Buscando Valor Atual... (Altere para o Seu P.M Real)...";
                     priceInput.disabled = true; 
                     
                     try {
@@ -557,13 +557,29 @@ export const AssetController = {
                     quantity: Number(qtyInput.value),
                     averagePrice: parseFloat(priceInput.value)
                 };
+
+                const editButton = document.querySelector(`.btn-edit[data-id="${id}"]`);
+                const deleteButton = document.querySelector(`.btn-delete[data-id="${id}"]`);
+                const ticker = editButton?.dataset.ticker || '';
+                const loadingIcon = ticker ? document.getElementById(`loading-${ticker}`) : null;
+
+                // --- MAGIA ACONTECENDO AQUI ---
+                // Mostra o ícone girando removendo a classe d-none que o Bootstrap força
+                if (loadingIcon) {
+                    loadingIcon.classList.remove('d-none');
+                    loadingIcon.classList.add('d-inline-block');
+                }
                 
-                this.showLoading('Atualizando ativo...');
+                // Esconde os botões normais para evitar múltiplos cliques
+                if (editButton) editButton.style.display = 'none';
+                if (deleteButton) deleteButton.style.display = 'none';
+
+                // Fecha o modal imediatamente! O usuário vai ver a tela principal com o ícone rodando
+                document.querySelector('#update-modal-overlay')?.classList.remove('active');
 
                 try {
                     await AssetService.updateAsset(id, data);
-                    document.querySelector('#update-modal-overlay')?.classList.remove('active');
-                    
+
                     const asset = this.state.assets.find(a => Number(a.id) === Number(id));
                     if (asset) {
                         asset.quantity = data.quantity;
@@ -578,9 +594,30 @@ export const AssetController = {
                         asset.divAnual = divAnual;
                         asset.divMensal = divMensal;
                     }
+
+                    // Ao chamar o renderLocalState(), ele refaz o HTML do zero.
+                    // Ou seja: a roldana some e os botões originais voltam automaticamente!
                     this.renderLocalState();
-                    this.showSuccess('Ativo atualizado com sucesso!');
+                    
+                    // Um aviso sutil de sucesso no canto, para não travar a tela
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Ativo atualizado!',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+
                 } catch (error) {
+                    // Se der erro, voltamos os botões para o estado inicial
+                    if (loadingIcon) {
+                        loadingIcon.classList.add('d-none');
+                        loadingIcon.classList.remove('d-inline-block');
+                    }
+                    if (editButton) editButton.style.display = 'inline-block';
+                    if (deleteButton) deleteButton.style.display = 'inline-block';
+                    
                     this.showError("Erro: " + error.message);
                 }
                 return;
@@ -662,7 +699,7 @@ export const AssetController = {
                 
                 if (priceInput && !priceInput.value) {
                     const originalPlaceholder = priceInput.placeholder;
-                    priceInput.placeholder = "Buscando...";
+                    priceInput.placeholder = "Buscando Valor Atual... (Altere para o Seu P.M Real)...";
                     priceInput.disabled = true; 
                     
                     try {
