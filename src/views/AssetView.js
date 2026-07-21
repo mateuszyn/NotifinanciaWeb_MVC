@@ -41,17 +41,34 @@ export const AssetView = {
             const yieldPct = asset.yieldpct || 0;
             const divMensal = asset.divMensal || 0;
             const divAnual = asset.divAnual || 0;
+            const currentPrice = Number(asset.currentPrice) || 0;
+            const quantity = Number(asset.quantity) || 0;
+            const rendaMensalPorCota = divAnual > 0 && quantity > 0 ? (divAnual / quantity) / 12 : 0;
+            const cotasParaBolaDeNeve = rendaMensalPorCota > 0 && currentPrice > 0 ? Math.ceil(currentPrice / rendaMensalPorCota) : 0;
+            const cotasFaltantes = Math.max(0, cotasParaBolaDeNeve - quantity);
+            const cotasCompradasPorMes = divMensal > 0 && currentPrice > 0 ? Number((divMensal / currentPrice).toFixed(1)) : 0;
+            const cotasCompradasPorAno = divAnual > 0 && currentPrice > 0 ? Number((divAnual / currentPrice).toFixed(1)) : 0;
             const showZeroVariationWarning = dailyChange === 0 && profitPct === 0;
+
+            let snowballMessage = `Faltam ${cotasFaltantes} cotas para a Bola de Neve (${cotasParaBolaDeNeve} cotas)`;
+            if (cotasParaBolaDeNeve > 0 && quantity >= cotasParaBolaDeNeve) {
+                snowballMessage = `Você atingiu a Bola de Neve! (${cotasParaBolaDeNeve} Cotas)`;
+            } else if (cotasParaBolaDeNeve > 0 && quantity > 0 && quantity > cotasParaBolaDeNeve) {
+                const acima = quantity - cotasParaBolaDeNeve;
+                snowballMessage = `Você está ${acima} Cotas acima da Bola de Neve (${cotasParaBolaDeNeve})`;
+            }
 
             let dividendContent = `
                 <div class="d-flex justify-content-around">
                     <div>
                         <p class="small text-secondary mb-0">Renda Mensal</p>
                         <p class="fw-bold mb-0 text-white">R$ ${divMensal.toFixed(2)}</p>
+                        <p class="small mt-1 mb-0" style="color: #8fe3a7;">Gera ${cotasCompradasPorMes.toFixed(1)} cota(s) / mês</p>
                     </div>
                     <div>
                         <p class="small text-secondary mb-0">Renda Anual</p>
                         <p class="fw-bold mb-0 text-white">R$ ${divAnual.toFixed(2)}</p>
+                        <p class="small mt-1 mb-0" style="color: #8fe3a7;">Gera ${cotasCompradasPorAno.toFixed(1)} cota(s) / ano</p>
                     </div>
                 </div>
             `;
@@ -99,7 +116,10 @@ export const AssetView = {
                         <div class="row mb-3">
                             <div class="col-12">
                                 <p class="price-value mb-0">Total: R$ ${(asset.quantity * asset.currentPrice).toFixed(2)}</p>
-                                <p class="small text-secondary fw-bold">QTD: ${asset.quantity}</p>
+                                <p class="small text-secondary fw-bold mb-1">QTD: ${asset.quantity}</p>
+                                <p class="small mb-0" style="font-size: 0.72rem; color: #8fe3a7;">
+                                    ${snowballMessage}
+                                </p>
                             </div>
                         </div>
                         

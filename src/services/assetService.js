@@ -99,8 +99,9 @@ export const AssetService = {
             const data = await this.getMarketPrices(ticker);
             const res = data.results?.[0];
             return {
-                price: res?.regularMarketPrice || 0,
-                changePercent: res?.regularMarketChangePercent || 0
+                price: Number(res?.regularMarketPrice || 0),
+                changePercent: Number(res?.regularMarketChangePercent || 0),
+                yieldPct: Number(res?.dividendYield ?? res?.yield ?? 0)
             };
         } catch (error) {
             return { price: 0, changePercent: 0 };

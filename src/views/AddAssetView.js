@@ -1,5 +1,6 @@
 import { TickerDictionary } from '../models/TickerDictionary.js';
-import { Security } from '../services/security.js'; 
+import { Security } from '../services/security.js';
+import { AssetService } from '../services/assetService.js';
 
 export const AddAssetView = {
     render() {
@@ -18,7 +19,9 @@ export const AddAssetView = {
                     </div>
 
                     <div class="col-8 col-md-4">
-                        <label for="quantity" class="small text-secondary fw-bold mb-1">Quantidade</label>
+                        <label for="quantity" class="small text-secondary fw-bold mb-1 d-flex align-items-center gap-2">
+                            Quantidade
+                        </label>
                         <div class="input-group input-group-sm">
                             <input type="number" id="quantity" 
                                    class="form-control bg-black text-white border-secondary" 
@@ -54,6 +57,25 @@ export const AddAssetView = {
         this.setupEventListeners();
     },
 
+    injectSnowballInfo(cotasParaBolaDeNeve) {
+        const quantityLabel = document.querySelector('label[for="quantity"]');
+        if (!quantityLabel) return;
+
+        quantityLabel.querySelectorAll('.snowball-add-info').forEach((el) => el.remove());
+
+        if (!Number.isFinite(cotasParaBolaDeNeve) || cotasParaBolaDeNeve <= 0) return;
+
+        const span = document.createElement('span');
+        span.className = 'snowball-add-info';
+        span.style.cssText = 'color: #8fe3a7; font-size: 0.85em; margin-left: 5px;';
+        span.textContent = `(Faltam ${cotasParaBolaDeNeve} para a bola de neve)`;
+        quantityLabel.appendChild(span);
+    },
+
+    clearSnowballInfo() {
+        document.querySelectorAll('label[for="quantity"] .snowball-add-info').forEach((el) => el.remove());
+    },
+
     setupEventListeners() {
         const tickerInput = document.querySelector('#asset-ticker');
         const suggestionsBox = document.querySelector('#ticker-suggestions');
@@ -61,6 +83,10 @@ export const AddAssetView = {
         if (tickerInput && suggestionsBox) {
             tickerInput.addEventListener('input', (e) => {
                 const query = e.target.value;
+                if (!query.trim()) {
+                    this.clearSnowballInfo();
+                }
+
                 const results = TickerDictionary.search(query);
 
                 if (results.length > 0 && query.length >= 2) {

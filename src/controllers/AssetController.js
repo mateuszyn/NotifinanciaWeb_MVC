@@ -158,8 +158,17 @@ export const AssetController = {
                         const data = await AssetService.getPrice(ticker);
                         if (data && data.price > 0) {
                             priceInput.value = data.price.toFixed(2);
+
+                            const yieldAnual = Number(data.yieldPct || 0);
+                            if (yieldAnual > 0) {
+                                const rendaMensalPorCota = (data.price * (yieldAnual / 100)) / 12;
+                                const cotasParaBolaDeNeve = rendaMensalPorCota > 0 ? Math.ceil(data.price / rendaMensalPorCota) : 0;
+                                AddAssetView.injectSnowballInfo(cotasParaBolaDeNeve);
+                            } else {
+                                AddAssetView.clearSnowballInfo();
+                            }
                         } else {
-                            // Se falhar, avisa pelo Toast e deixa o usuário digitar
+                            AddAssetView.clearSnowballInfo();
                             Swal.fire({
                                 toast: true,
                                 position: 'top-end',
@@ -170,6 +179,7 @@ export const AssetController = {
                             });
                         }
                     } catch (err) {
+                        AddAssetView.clearSnowballInfo();
                         console.error("Erro ao forçar busca de preço:", err);
                     } finally {
                         priceInput.placeholder = originalPlaceholder;
@@ -177,6 +187,7 @@ export const AssetController = {
                         priceInput.focus(); // Devolve o foco para facilitar a digitação manual
                     }
                 } else {
+                    AddAssetView.clearSnowballInfo();
                     Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Digite um Ticker primeiro.', showConfirmButton: false, timer: 2000 });
                 }
                 return;
@@ -553,12 +564,19 @@ export const AssetController = {
                     await AssetService.updateAsset(id, data);
                     document.querySelector('#update-modal-overlay')?.classList.remove('active');
                     
-                    const asset = this.state.assets.find(a => a.id == id);
+                    const asset = this.state.assets.find(a => Number(a.id) === Number(id));
                     if (asset) {
                         asset.quantity = data.quantity;
                         asset.averagePrice = data.averagePrice;
-                        asset.variacaoPM = asset.averagePrice > 0 ? ((asset.currentPrice / asset.averagePrice) - 1) * 100 : 0;
-                        asset.totalValue = asset.currentPrice * asset.quantity;
+                        const currentPrice = Number(asset.currentPrice) || Number(asset.averagePrice) || 0;
+                        const yieldpct = Number(asset.yieldpct) || 0;
+                        const divAnual = currentPrice * (yieldpct / 100) * asset.quantity;
+                        const divMensal = divAnual / 12;
+
+                        asset.variacaoPM = asset.averagePrice > 0 ? ((currentPrice / asset.averagePrice) - 1) * 100 : 0;
+                        asset.totalValue = currentPrice * asset.quantity;
+                        asset.divAnual = divAnual;
+                        asset.divMensal = divMensal;
                     }
                     this.renderLocalState();
                     this.showSuccess('Ativo atualizado com sucesso!');
@@ -636,8 +654,13 @@ export const AssetController = {
             if (e.target && e.target.id === 'asset-ticker') {
                 const ticker = e.target.value.toUpperCase().trim();
                 const priceInput = document.querySelector('#averagePrice');
+
+                if (!ticker || ticker.length < 4) {
+                    AddAssetView.clearSnowballInfo();
+                    return;
+                }
                 
-                if (ticker && ticker.length >= 4 && priceInput && !priceInput.value) {
+                if (priceInput && !priceInput.value) {
                     const originalPlaceholder = priceInput.placeholder;
                     priceInput.placeholder = "Buscando...";
                     priceInput.disabled = true; 
@@ -647,7 +670,21 @@ export const AssetController = {
                         if (data && data.price > 0 && !priceInput.value) {
                             priceInput.value = data.price.toFixed(2);
                         }
+
+                        if (data && data.price > 0) {
+                            const yieldAnual = Number(data.yieldPct || 0);
+                            if (yieldAnual > 0) {
+                                const rendaMensalPorCota = (data.price * (yieldAnual / 100)) / 12;
+                                const cotasParaBolaDeNeve = rendaMensalPorCota > 0 ? Math.ceil(data.price / rendaMensalPorCota) : 0;
+                                AddAssetView.injectSnowballInfo(cotasParaBolaDeNeve);
+                            } else {
+                                AddAssetView.clearSnowballInfo();
+                            }
+                        } else {
+                            AddAssetView.clearSnowballInfo();
+                        }
                     } catch (err) {
+                        AddAssetView.clearSnowballInfo();
                         console.error("Erro ao buscar preço no Google:", err);
                     } finally {
                         priceInput.placeholder = originalPlaceholder;
