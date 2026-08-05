@@ -99,7 +99,11 @@ def market_data(tickers: str) -> Dict[str, Any]:
                 raw_yield = dividend_yield if dividend_yield not in (None, 0) else trailing_yield
                 if raw_yield is None:
                     raise ValueError("yield empty")
-                yieldpct = round(float(raw_yield) * 100, 2)
+
+                yieldpct = float(raw_yield)
+                if yieldpct > 0 and yieldpct < 1.0:
+                    yieldpct = yieldpct * 100
+                yieldpct = round(yieldpct, 2)
             except Exception:
                 try:
                     dividends = getattr(tk, "dividends", None)
