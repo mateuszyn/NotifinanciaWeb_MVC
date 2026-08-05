@@ -35,7 +35,7 @@ export const AssetController = {
             let apiResults = {};
 
             try {
-                const response = await fetch(`https://notifinancia-api.onrender.com/market-data?tickers=${allTickers.join(',')}`);
+                const response = await fetch(`/api/market-data?tickers=${allTickers.join(',')}`);
                 if (response.ok) {
                     const data = await response.json();
                     apiResults = data.results || {};
