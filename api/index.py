@@ -82,9 +82,19 @@ def market_data(tickers: str) -> Dict[str, Any]:
                                     change_percent = round(((price - previous) / previous) * 100, 2)
 
             fast_info = getattr(ticker, "fast_info", None)
-            yieldpct = None
+            yieldpct = 0.0
             if fast_info:
-                yieldpct = fast_info.get("dividendYield") or fast_info.get("last_dividend_yield")
+                dividend_yield = fast_info.get("dividendYield")
+                trailing_yield = fast_info.get("trailingAnnualDividendYield")
+
+                if dividend_yield is None and trailing_yield is None:
+                    yieldpct = 0.0
+                else:
+                    raw_yield = dividend_yield if dividend_yield not in (None, 0) else trailing_yield
+                    if raw_yield is None:
+                        yieldpct = 0.0
+                    else:
+                        yieldpct = round(float(raw_yield) * 100, 2)
 
             results[symbol] = {
                 "ticker": symbol,
