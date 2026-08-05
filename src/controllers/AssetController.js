@@ -46,7 +46,7 @@ export const AssetController = {
 
             const enrichedAssets = userAssets.map(asset => {
                 const normalizedTicker = asset.ticker.replace(/\.SA$/i, '').replace(/\.sa$/i, '').toUpperCase();
-                const apiAsset = apiResults[normalizedTicker] || {};
+                const apiAsset = apiResults[normalizedTicker] || apiResults[`${normalizedTicker}.SA`] || {};
                 const hasApiData = Boolean(apiAsset && Object.keys(apiAsset).length > 0);
                 const hasMeaningfulValues = hasApiData && (Number(apiAsset.price) > 0 || Number(apiAsset.changePercent) !== 0 || Number(apiAsset.yieldpct) > 0);
                 const currentPrice = apiAsset.price ?? asset.averagePrice ?? 0;
@@ -417,7 +417,7 @@ export const AssetController = {
 
                 try {
                     const data = await AssetService.getMarketPrices([ticker]);
-                    const result = data.results?.[0] || data.results?.[ticker.toUpperCase()] || null;
+                    const result = data.results?.[0] || data.results?.[ticker.toUpperCase()] || data.results?.[`${ticker.toUpperCase()}.SA`] || null;
 
                     if (result && (Number(result.price) > 0 || Number(result.changePercent) !== 0 || Number(result.yieldpct) > 0)) {
                         const asset = this.state.assets[assetIndex];
