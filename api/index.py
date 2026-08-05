@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
 
 import pandas as pd
+import requests
 import yfinance as yf
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -42,12 +43,17 @@ def market_data(tickers: str) -> Dict[str, Any]:
     except Exception:
         batch_data = None
 
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    })
+
     results: Dict[str, Dict[str, Any]] = {}
 
     for symbol in symbols:
         try:
-            ticker = yf.Ticker(symbol)
-            history = ticker.history(period="2d", auto_adjust=False)
+            tk = yf.Ticker(symbol, session=session)
+            history = tk.history(period="2d", auto_adjust=False)
 
             price = None
             change_percent = None
@@ -81,20 +87,40 @@ def market_data(tickers: str) -> Dict[str, Any]:
                                 if previous > 0:
                                     change_percent = round(((price - previous) / previous) * 100, 2)
 
-            fast_info = getattr(ticker, "fast_info", None)
             yieldpct = 0.0
-            if fast_info:
-                dividend_yield = fast_info.get("dividendYield")
-                trailing_yield = fast_info.get("trailingAnnualDividendYield")
+            try:
+                info = getattr(tk, "info", None) or {}
+                dividend_yield = info.get("dividendYield")
+                trailing_yield = info.get("trailingAnnualDividendYield")
 
                 if dividend_yield is None and trailing_yield is None:
+                    raise ValueError("yield not available in info")
+
+                raw_yield = dividend_yield if dividend_yield not in (None, 0) else trailing_yield
+                if raw_yield is None:
+                    raise ValueError("yield empty")
+                yieldpct = round(float(raw_yield) * 100, 2)
+            except Exception:
+                try:
+                    dividends = getattr(tk, "dividends", None)
+                    if dividends is None or dividends.empty:
+                        raise ValueError("no dividends")
+
+                    recent_dividends = dividends.tail(12)
+                    if recent_dividends.empty:
+                        raise ValueError("no recent dividends")
+
+                    total_dividends = float(recent_dividends.sum())
+                    current_price = price
+                    if current_price is None or current_price <= 0:
+                        current_price = float(tk.history(period="1d", auto_adjust=False)["Close"].iloc[-1]) if not tk.history(period="1d", auto_adjust=False).empty else None
+
+                    if current_price is None or current_price <= 0:
+                        raise ValueError("no price")
+
+                    yieldpct = round((total_dividends / current_price) * 100, 2)
+                except Exception:
                     yieldpct = 0.0
-                else:
-                    raw_yield = dividend_yield if dividend_yield not in (None, 0) else trailing_yield
-                    if raw_yield is None:
-                        yieldpct = 0.0
-                    else:
-                        yieldpct = round(float(raw_yield) * 100, 2)
 
             results[symbol] = {
                 "ticker": symbol,
