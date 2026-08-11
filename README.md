@@ -1,39 +1,54 @@
-**🛠️ Instalação e Configuração**
+# 📈 Notifinancia
 
-Para configurar o ambiente de desenvolvimento local do Notifinancia, siga os passos abaixo:
+> **Gestão Inteligente de Dividendos e Automação de Carteira**
 
-**1. Pré-requisitos**
+O **Notifinancia** é uma plataforma web completa desenvolvida para o acompanhamento estratégico de ações e Fundos Imobiliários (FIIs) da B3. Inspirado na metodologia Barsi de investimento focado em dividendos, o sistema oferece cotações em tempo real, cálculos automáticos de preço médio, alertas de variação e relatórios diários automatizados direto no e-mail do usuário.
 
-- Node.js: Certifique-se de ter o Node.js instalado (Versão 24.x ou superior recomendada).
+---
 
-- Git: Para clonagem e versionamento.
+## 💡 Destaques Técnicos (Visão para Recrutadores)
 
-**2. Configuração Inicial**
+Este projeto foi construído com foco em **performance, resiliência e UX**, resolvendo desafios reais de engenharia de software:
 
-- Clone o repositório para sua máquina local e navegue até a pasta do projeto
+*   **Arquitetura Serverless Híbrida:** Integração fluida entre um Front-end MVC e um Back-end robusto em Python utilizando as *Serverless Functions* da Vercel. Isso eliminou problemas de CORS e reduziu o tempo de resposta das APIs para milissegundos.
+*   **Resiliência no Web Scraping:** Implementação de mecanismos de *fallback* e cálculos matemáticos "na raça" no Back-end (Python/yfinance) para contornar bloqueios de IP ao buscar o *Dividend Yield* em ambientes de nuvem.
+*   **Integração com IA (Prompt Engineering):** O sistema não apenas exibe dados, mas conta com um motor gerador de *Smart Prompts*. Ele compila os dados da carteira do usuário (ativos, preço médio, variação diária, quantidade) e gera um prompt otimizado para o Google Gemini retornar análises táticas de aporte e leitura de cenário.
+*   **CRON Jobs e Mensageria:** Utilização de *Edge Functions* (Deno/Supabase) para varrer o banco de dados de usuários, compilar o fechamento de mercado e disparar relatórios transacionais via Resend API.
 
-**3. Instalação de Dependências**
+---
 
-- Instale todos os pacotes necessários (Vite, Supabase SDK, etc) executando NA PASTA DO PROJETO:
+## 🛠️ Tecnologias Utilizadas
 
-_npm install_
+**Front-end:**
+*   HTML5, CSS3 (Bootstrap 5) & JavaScript (ES6+)
+*   Arquitetura MVC (Model-View-Controller) local
+*   Vite (Build Tool)
 
-- Só o NPM basta pois já está tudo criado.
-- Nota sobre permissões (Windows/PowerShell): Caso receba um erro de "execução de scripts desabilitada" ao tentar rodar comandos npm no VS Code, abra o PowerShell e execute o comando. Talvez seja nova config de segurança do windows. Caso queira liberar o Terminal do VS, execute: Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser no prompt de comando.
+**Back-end & API:**
+*   Python 3 & FastAPI
+*   Vercel Serverless Functions (`/api`)
+*   `yfinance` & `requests` (Integração B3)
 
-**4. Variáveis de Ambiente**
+**Banco de Dados, Autenticação & Automação:**
+*   Supabase (PostgreSQL)
+*   Supabase Auth (Magic Links / OAuth)
+*   Supabase Edge Functions (Deno)
+*   Resend API (Disparo de E-mails)
 
-- Na raiz do projeto, crie um arquivo chamado ._env_.
+---
 
-- Adicione as seguintes variáveis para conexão posteriormente:
+## ⚙️ Instalação e Configuração
 
-_VITE_SUPABASE_URL=_
+Para configurar o ambiente de desenvolvimento local do Notifinancia e rodar o Front-end e o Back-end simultaneamente, siga os passos abaixo:
 
-VITE_SUPABASE_ANON_KEY=
+### 1. Pré-requisitos
+*   **Node.js:** Versão 24.x ou superior recomendada.
+*   **Python:** Versão 3.9 ou superior.
+*   **Git:** Para clonagem e versionamento.
+*   **Vercel CLI:** Para emular o ambiente de produção localmente (instale via npm: `npm i -g vercel`).
 
-**5. Execução**
-- Para iniciar o servidor de desenvolvimento com suporte a Hot Reload:
-
-_npm run dev_
-
-- O console indicará o endereço local (ex: http://localhost:5173) para acesso via navegador.
+### 2. Configuração Inicial
+Clone o repositório para sua máquina local e navegue até a pasta do projeto:
+```bash
+git clone [https://github.com/SEU-USUARIO/NotifinanciaWeb_MVC.git](https://github.com/SEU-USUARIO/NotifinanciaWeb_MVC.git)
+cd NotifinanciaWeb_MVC
