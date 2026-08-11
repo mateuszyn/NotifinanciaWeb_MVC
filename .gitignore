@@ -26,6 +26,9 @@ dist-ssr
 .env
 .env.local
 
+venv/
+__pycache__/
+.env
 
 .vercel
 .env*
