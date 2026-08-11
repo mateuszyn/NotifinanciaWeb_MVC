@@ -52,3 +52,46 @@ Clone o repositório para sua máquina local e navegue até a pasta do projeto:
 ```bash
 git clone [https://github.com/SEU-USUARIO/NotifinanciaWeb_MVC.git](https://github.com/SEU-USUARIO/NotifinanciaWeb_MVC.git)
 cd NotifinanciaWeb_MVC
+```
+
+### 3. Instalação de Dependências (Front-end)
+Instale os pacotes necessários (Vite, Supabase SDK, etc) executando na pasta raiz:
+
+```bash
+npm install
+``` 
+Nota sobre permissões (Windows/PowerShell): Caso receba um erro de "execução de scripts desabilitada" ao tentar rodar comandos no VS Code, isso ocorre devido à política de segurança do Windows. Para liberar a execução no terminal, abra o PowerShell como Administrador e execute: Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser.
+
+
+### 4. Variáveis de Ambiente
+Na raiz do projeto, crie um arquivo chamado .env. Adicione as seguintes variáveis para a conexão com o banco de dados:
+
+```bash
+VITE_SUPABASE_URL=sua_url_do_supabase_aqui
+VITE_SUPABASE_ANON_KEY=sua_chave_anon_do_supabase_aqui
+```
+(Certifique-se de nunca commitar este arquivo. Ele já deve estar ignorado no .gitignore).
+
+### 5. Execução do Projeto (Front + API Serverless)
+Como o projeto utiliza a infraestrutura da Vercel para rodar o Python na pasta /api, não utilizamos o comando padrão do Vite. Para iniciar o orquestrador completo, execute:
+
+```bash
+vercel dev
+```
+O Vercel CLI irá subir o servidor de desenvolvimento, conectar a API Python e disponibilizar a aplicação, geralmente no endereço: http://localhost:3000.
+
+### 📱 Funcionalidades
+[x] Autenticação segura sem senha (Magic Link/Google).
+
+[x] CRUD completo de ativos da B3 (Ações e FIIs).
+
+[x] Cálculo de Rentabilidade com base no Preço Médio.
+
+[x] Trava de segurança para meta da "Bola de Neve" (cotas que pagam novas cotas).
+
+[x] Geração diária de e-mails de fechamento de mercado.
+
+[x] Injeção de Prompts para análises via IA.
+
+
+
