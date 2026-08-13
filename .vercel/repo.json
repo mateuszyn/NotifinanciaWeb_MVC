@@ -1,0 +1,11 @@
+{
+  "remoteName": "origin",
+  "projects": [
+    {
+      "id": "prj_82qzQdmWtnwc6s8zV50pPqv7LPLg",
+      "name": "notifinancia-web-mvc",
+      "directory": ".",
+      "orgId": "team_ieD64f23eQLB2vCwhqTHtsPd"
+    }
+  ]
+}
