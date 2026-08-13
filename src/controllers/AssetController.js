@@ -28,11 +28,11 @@ export const AssetController = {
 
         this.state.user = user;
 
+        // userAssets já são instâncias puras da classe Asset
         const userAssets = await AssetService.getAssets();
 
         if (userAssets.length > 0) {
             const allTickers = userAssets.map(a => a.ticker);
-
             const marketData = await AssetService.getMarketPrices(allTickers);
             
             const livePrices = {};
@@ -42,25 +42,13 @@ export const AssetController = {
                 });
             }
 
-            const enrichedAssets = userAssets.map(asset => {
+            // O Model assume a atualização de mercado sem recriar objetos soltos
+            userAssets.forEach(asset => {
                 const live = livePrices[asset.ticker] || { regularMarketPrice: 0, regularMarketChangePercent: 0 };
-                
-                const currentPrice = live.regularMarketPrice || 0;
-                const dailyChange = live.regularMarketChangePercent || 0;
-                const variacaoPM = asset.averagePrice > 0 
-                    ? ((currentPrice / asset.averagePrice) - 1) * 100 
-                    : 0;
-
-                return {
-                    ...asset,
-                    currentPrice,
-                    dailyChange,
-                    variacaoPM,
-                    totalValue: currentPrice * asset.quantity
-                };
+                asset.setMarketData(live.regularMarketPrice, live.regularMarketChangePercent);
             });
 
-            this.state.assets = enrichedAssets;
+            this.state.assets = userAssets;
         } else {
             this.state.assets = [];
         }
@@ -122,7 +110,6 @@ export const AssetController = {
         });
     },
 
-    // --- AQUI ESTÁ A MÁGICA: Zero contato com o DOM ---
     setupDelegatedEvents() {
         const handlers = {
             onRetryPrice: async (ticker) => {
@@ -212,7 +199,7 @@ export const AssetController = {
                 }
 
                 Swal.fire(alertConfig).then(async (result) => {
-                    if (taxInfo.isTaxable) return; // Já tratado no preConfirm
+                    if (taxInfo.isTaxable) return;
                     if (result.isConfirmed) {
                         this.showLoading('Excluindo ativo...');
                         try {
@@ -242,10 +229,9 @@ export const AssetController = {
                     
                     const asset = this.state.assets.find(a => a.id == id);
                     if (asset) {
+                        // Apenas atualiza os valores brutos. variacaoPM e totalValue são recalculados dinamicamente via Getters!
                         asset.quantity = data.quantity;
                         asset.averagePrice = data.averagePrice;
-                        asset.variacaoPM = asset.averagePrice > 0 ? ((asset.currentPrice / asset.averagePrice) - 1) * 100 : 0;
-                        asset.totalValue = asset.currentPrice * asset.quantity;
                     }
                     this.renderLocalState();
                     this.showSuccess('Ativo atualizado!');
@@ -347,7 +333,6 @@ export const AssetController = {
             }
         };
 
-        // Passa o pacote de regras para a View
         AssetView.bindEvents(handlers);
     }
 };
