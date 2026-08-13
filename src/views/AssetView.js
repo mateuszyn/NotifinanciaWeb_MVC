@@ -4,7 +4,6 @@ export const AssetView = {
     render(assets, user) {
         const app = document.querySelector('#app');
         
-        // --- NOVO: Extração e Formatação do Primeiro Nome ---
         const rawUserName = user.user_metadata?.full_name || user.email.split('@')[0];
         const firstNameRaw = rawUserName.split(' ')[0].toLowerCase();
         const firstName = firstNameRaw.charAt(0).toUpperCase() + firstNameRaw.slice(1);
@@ -166,17 +165,13 @@ export const AssetView = {
             brokerSelect.addEventListener('change', (e) => {
                 const selected = e.target.value;
                 const info = BROKERS[selected];
-                
                 brokerSelect.style.backgroundColor = info.color;
                 brokerSelect.style.color = info.textColor;
-                
-                brokerSelect.dispatchEvent(new CustomEvent('brokerChanged', { detail: selected }));
             });
         }
 
         const drawer = document.querySelector('#add-asset-drawer');
         const drawerHeader = document.querySelector('#drawer-toggle');
-        
         if (drawer && drawerHeader && !user.isGuest) {
             drawerHeader.replaceWith(drawerHeader.cloneNode(true));
             const newDrawerHeader = document.querySelector('#drawer-toggle');
@@ -210,5 +205,158 @@ export const AssetView = {
                     </form>
                 </div>
             </div>`;
+    },
+
+    // --- MÉTODOS DE MANIPULAÇÃO DO DOM (Puros Visuais) ---
+    showUpdateModal(id, ticker, qty, price) {
+        document.querySelector('#update-id').value = id;
+        document.querySelector('#modal-ticker-title').innerText = ticker;
+        document.querySelector('#update-quantity').value = qty;
+        document.querySelector('#update-averagePrice').value = price;
+        document.querySelector('#update-modal-overlay')?.classList.add('active');
+    },
+
+    closeUpdateModal() {
+        document.querySelector('#update-modal-overlay')?.classList.remove('active');
+    },
+
+    closeAddDrawer() {
+        document.querySelector('#add-asset-drawer')?.classList.add('collapsed');
+    },
+
+    clearAddForm() {
+        const t = document.querySelector('#asset-ticker');
+        const q = document.querySelector('#quantity');
+        const p = document.querySelector('#averagePrice');
+        if (t) t.value = '';
+        if (q) q.value = '';
+        if (p) p.value = '';
+    },
+
+    setPriceLoading(isLoading) {
+        const priceInput = document.querySelector('#averagePrice');
+        if (!priceInput) return;
+        
+        if (isLoading) {
+            priceInput.dataset.originalPlaceholder = priceInput.placeholder;
+            priceInput.value = '';
+            priceInput.placeholder = "Buscando...";
+            priceInput.disabled = true;
+        } else {
+            priceInput.placeholder = priceInput.dataset.originalPlaceholder || '';
+            priceInput.disabled = false;
+        }
+    },
+
+    setPriceValue(price) {
+        const priceInput = document.querySelector('#averagePrice');
+        if (priceInput) priceInput.value = price;
+    },
+
+    focusPriceInput() {
+        document.querySelector('#averagePrice')?.focus();
+    },
+
+    // --- O PADRÃO BIND: Recebe as intenções do usuário e avisa o Controller ---
+    bindEvents(handlers) {
+        const app = document.querySelector('#app');
+        if (!app) return;
+
+        app.addEventListener('click', (e) => {
+            // Tentar buscar preço novamente
+            if (e.target.closest('#btn-retry-price')) {
+                const ticker = document.querySelector('#asset-ticker')?.value.toUpperCase().trim();
+                handlers.onRetryPrice(ticker);
+                return;
+            }
+
+            // Deletar Ativo
+            const btnDelete = e.target.closest('.btn-delete');
+            if (btnDelete) {
+                handlers.onDeleteAsset(btnDelete.dataset.id);
+                return;
+            }
+
+            // Abrir Modal de Edição (A View faz sozinha, não incomoda o Controller)
+            const btnEdit = e.target.closest('.btn-edit');
+            if (btnEdit) {
+                this.showUpdateModal(
+                    btnEdit.dataset.id,
+                    btnEdit.dataset.ticker,
+                    btnEdit.dataset.qty,
+                    btnEdit.dataset.price
+                );
+                return;
+            }
+
+            // Fechar Modal
+            const overlay = document.querySelector('#update-modal-overlay');
+            if (e.target.closest('#btn-close-modal') || e.target === overlay) {
+                this.closeUpdateModal();
+                return;
+            }
+
+            // Toggle Notificação
+            const btnNotif = e.target.closest('#btn-toggle-notif');
+            if (btnNotif) {
+                const icon = btnNotif.querySelector('i');
+                handlers.onToggleNotif(icon);
+                return;
+            }
+
+            // Logout
+            if (e.target.closest('#btn-logout')) {
+                handlers.onLogout();
+                return;
+            }
+        });
+
+        app.addEventListener('change', (e) => {
+            const sortSelect = e.target.closest('#sort-select');
+            if (sortSelect) {
+                handlers.onSortChange(sortSelect.value);
+                return;
+            }
+
+            const brokerSelect = e.target.closest('#broker-select');
+            if (brokerSelect) {
+                handlers.onBrokerChange(brokerSelect.value);
+                return;
+            }
+        });
+
+        app.addEventListener('submit', (e) => {
+            const formUpdate = e.target.closest('#form-update-asset');
+            if (formUpdate) {
+                e.preventDefault();
+                handlers.onUpdateAsset(
+                    document.querySelector('#update-id').value,
+                    document.querySelector('#update-quantity').value,
+                    document.querySelector('#update-averagePrice').value
+                );
+                return;
+            }
+
+            const formCreate = e.target.closest('#form-asset');
+            if (formCreate) {
+                e.preventDefault();
+                handlers.onCreateAsset(
+                    document.querySelector('#asset-ticker')?.value.toUpperCase().trim(),
+                    document.querySelector('#quantity')?.value,
+                    document.querySelector('#averagePrice')?.value
+                );
+                return;
+            }
+        });
+
+        app.addEventListener('focusout', (e) => {
+            if (e.target && e.target.id === 'asset-ticker') {
+                const priceInput = document.querySelector('#averagePrice');
+                // Só dispara a busca se o campo de preço estiver vazio
+                if (priceInput && !priceInput.value) {
+                    handlers.onTickerFocusOut(e.target.value.toUpperCase().trim());
+                }
+            }
+        });
     }
 };

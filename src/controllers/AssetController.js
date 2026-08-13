@@ -4,6 +4,7 @@ import { AddAssetView } from '../views/AddAssetView.js';
 import { AuthService } from '../services/authService.js';
 import { supabase } from '../services/supabaseClient.js';
 import { TickerDictionary } from '../models/TickerDictionary.js';
+import { TaxCalculator } from '../domain/TaxCalculator.js';
 
 export const AssetController = {
     state: {
@@ -99,9 +100,7 @@ export const AssetController = {
         Swal.fire({
             title: message,
             allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
+            didOpen: () => { Swal.showLoading(); }
         });
     },
 
@@ -123,119 +122,68 @@ export const AssetController = {
         });
     },
 
+    // --- AQUI ESTÁ A MÁGICA: Zero contato com o DOM ---
     setupDelegatedEvents() {
-        const appContainer = document.querySelector('#app');
-        if (!appContainer) return;
-
-        appContainer.addEventListener('click', async (e) => {
-            
-            // --- NOVO: BOTÃO DE RECARREGAR PREÇO ---
-            const btnRetryPrice = e.target.closest('#btn-retry-price');
-            if (btnRetryPrice) {
-                const tickerInput = document.querySelector('#asset-ticker');
-                const priceInput = document.querySelector('#averagePrice');
-                const ticker = tickerInput ? tickerInput.value.toUpperCase().trim() : '';
-                
-                if (ticker && ticker.length >= 4) {
-                    const originalPlaceholder = priceInput.placeholder;
-                    priceInput.value = ''; // Limpa o valor antigo
-                    priceInput.placeholder = "Buscando...";
-                    priceInput.disabled = true; 
-                    
-                    try {
-                        const data = await AssetService.getPrice(ticker);
-                        if (data && data.price > 0) {
-                            priceInput.value = data.price.toFixed(2);
-                        } else {
-                            // Se falhar, avisa pelo Toast e deixa o usuário digitar
-                            Swal.fire({
-                                toast: true,
-                                position: 'top-end',
-                                icon: 'warning',
-                                title: 'Preço não encontrado. Digite manualmente.',
-                                showConfirmButton: false,
-                                timer: 3000
-                            });
-                        }
-                    } catch (err) {
-                        console.error("Erro ao forçar busca de preço:", err);
-                    } finally {
-                        priceInput.placeholder = originalPlaceholder;
-                        priceInput.disabled = false;
-                        priceInput.focus(); // Devolve o foco para facilitar a digitação manual
-                    }
-                } else {
+        const handlers = {
+            onRetryPrice: async (ticker) => {
+                if (!ticker || ticker.length < 4) {
                     Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Digite um Ticker primeiro.', showConfirmButton: false, timer: 2000 });
+                    return;
                 }
-                return;
-            }
-
-            const btnDelete = e.target.closest('.btn-delete');
-            if (btnDelete) {
-                const idDoAtivo = btnDelete.dataset.id;
-                const asset = this.state.assets.find(a => a.id == idDoAtivo);
                 
+                AssetView.setPriceLoading(true);
+                try {
+                    const data = await AssetService.getPrice(ticker);
+                    if (data && data.price > 0) {
+                        AssetView.setPriceValue(data.price.toFixed(2));
+                    } else {
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'warning', title: 'Preço não encontrado. Digite manualmente.', showConfirmButton: false, timer: 3000 });
+                    }
+                } catch (err) {
+                    console.error("Erro ao forçar busca de preço:", err);
+                } finally {
+                    AssetView.setPriceLoading(false);
+                    AssetView.focusPriceInput();
+                }
+            },
+
+            onDeleteAsset: (idDoAtivo) => {
+                const asset = this.state.assets.find(a => a.id == idDoAtivo);
                 if (!asset) {
                     this.showError('Ativo não encontrado.');
                     return;
                 }
 
-                // Função interna para calcular o último dia útil do mês seguinte
-                const getLastBusinessDay = () => {
-                    const today = new Date();
-                    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 2, 0);
-                    let dayOfWeek = nextMonth.getDay();
-                    
-                    // Se for domingo (0), volta 2 dias (para sexta)
-                    if (dayOfWeek === 0) nextMonth.setDate(nextMonth.getDate() - 2);
-                    // Se for sábado (6), volta 1 dia (para sexta)
-                    else if (dayOfWeek === 6) nextMonth.setDate(nextMonth.getDate() - 1);
-                    
-                    const day = String(nextMonth.getDate()).padStart(2, '0');
-                    const month = String(nextMonth.getMonth() + 1).padStart(2, '0');
-                    const year = nextMonth.getFullYear();
-                    return `${day}/${month}/${year}`;
-                };
-
-                // Verifica se é FII (ticker termina em '11')
-                const isFII = asset.ticker.endsWith('11');
-                const lucro = (asset.currentPrice - asset.averagePrice) * asset.quantity;
-                const temLucro = lucro > 0;
-
-                // Se for FII e houver lucro, calcula imposto e exibe alerta customizado
+                const taxInfo = TaxCalculator.calculateFIITax(asset, asset.currentPrice);
                 let alertConfig;
-                if (isFII && temLucro) {
-                    const imposto = lucro * 0.20;
-                    const lucroFormatado = lucro.toFixed(2).replace('.', ',');
-                    const impostoFormatado = imposto.toFixed(2).replace('.', ',');
-                    const dataVencimento = getLastBusinessDay();
 
+                if (taxInfo.isTaxable) {
+                    const lucroFormatado = taxInfo.lucro.toFixed(2).replace('.', ',');
+                    const impostoFormatado = taxInfo.imposto.toFixed(2).replace('.', ',');
+                    
                     alertConfig = {
                         title: 'Atenção: Imposto Devido',
                         icon: 'info',
                         html: `
-    <div class="mb-3">
-        Lucro apurado: <b>R$ ${lucroFormatado}</b><br>
-        Imposto a pagar (20%): <b><span class="text-danger">R$ ${impostoFormatado}</span></b>
-    </div>
-    <div class="text-start">
-        <p class="small text-secondary mb-2"><b>1.</b> Efetue a venda na sua corretora.</p>
-        <p class="small text-secondary mb-1"><b>2.</b> Acesse o <a href="https://sicalc.receita.economia.gov.br/sicalc/principal" target="_blank" class="fw-bold text-primary text-decoration-underline">SicalcWeb <i class="bi bi-box-arrow-up-right"></i></a> e siga o caminho:</p>
-        
-        <div class="p-2 rounded mb-2" style="background-color: rgba(255,255,255,0.05); border: 1px dashed #6c757d; font-size: 0.75rem;">
-            <i class="bi bi-arrow-return-right text-success"></i> Preenchimento rápido<br>
-            <i class="bi bi-arrow-return-right text-success"></i> Pessoa Física (CPF)<br>
-            <i class="bi bi-arrow-return-right text-success"></i> Código da Receita: <b>6015</b><br>
-            <i class="bi bi-arrow-return-right text-success"></i> Vencimento: <b>${dataVencimento}</b>
-        </div>
-    </div>
-`,
+                            <div class="mb-3">
+                                Lucro apurado: <b>R$ ${lucroFormatado}</b><br>
+                                Imposto a pagar (20%): <b><span class="text-danger">R$ ${impostoFormatado}</span></b>
+                            </div>
+                            <div class="text-start">
+                                <p class="small text-secondary mb-2"><b>1.</b> Efetue a venda na sua corretora.</p>
+                                <p class="small text-secondary mb-1"><b>2.</b> Acesse o <a href="https://sicalc.receita.economia.gov.br/sicalc/principal" target="_blank" class="fw-bold text-primary text-decoration-underline">SicalcWeb <i class="bi bi-box-arrow-up-right"></i></a> e siga o caminho:</p>
+                                <div class="p-2 rounded mb-2" style="background-color: rgba(255,255,255,0.05); border: 1px dashed #6c757d; font-size: 0.75rem;">
+                                    <i class="bi bi-arrow-return-right text-success"></i> Preenchimento rápido<br>
+                                    <i class="bi bi-arrow-return-right text-success"></i> Pessoa Física (CPF)<br>
+                                    <i class="bi bi-arrow-return-right text-success"></i> Código da Receita: <b>6015</b><br>
+                                    <i class="bi bi-arrow-return-right text-success"></i> Vencimento: <b>${taxInfo.dataVencimento}</b>
+                                </div>
+                            </div>`,
                         showCloseButton: true,
                         allowOutsideClick: false,
-                        allowEscapeKey: false,
                         showCancelButton: true,
                         confirmButtonColor: '#d33',
-                        confirmButtonText: 'Sim, remover da carteira',
+                        confirmButtonText: 'Sim, remover',
                         cancelButtonText: 'Cancelar',
                         preConfirm: async () => {
                             Swal.showLoading();
@@ -243,29 +191,15 @@ export const AssetController = {
                                 await AssetService.deleteAsset(idDoAtivo);
                                 this.state.assets = this.state.assets.filter(a => a.id != idDoAtivo);
                                 this.renderLocalState();
-                                
-                                Swal.hideLoading();
-                                Swal.update({
-                                    title: 'Ativo Removido!',
-                                    icon: 'success',
-                                    showConfirmButton: false,
-                                    showCancelButton: false
-                                });
-                                
-                                const confirmBtn = Swal.getConfirmButton();
-                                const cancelBtn = Swal.getCancelButton();
-                                if (confirmBtn) confirmBtn.style.display = 'none';
-                                if (cancelBtn) cancelBtn.style.display = 'none';
-                                
+                                Swal.update({ title: 'Removido!', icon: 'success', showConfirmButton: false });
                                 return false;
                             } catch (error) {
-                                Swal.showValidationMessage('Erro ao deletar: ' + error.message);
+                                Swal.showValidationMessage('Erro: ' + error.message);
                                 return false;
                             }
                         }
                     };
                 } else {
-                    // Alerta padrão para ações ou FIIs sem lucro
                     alertConfig = {
                         title: 'Excluir Ativo?',
                         text: "Você não poderá reverter isso!",
@@ -273,134 +207,38 @@ export const AssetController = {
                         showCancelButton: true,
                         confirmButtonColor: '#d33',
                         cancelButtonColor: '#6c757d',
-                        confirmButtonText: 'Sim, excluir!',
-                        cancelButtonText: 'Cancelar'
+                        confirmButtonText: 'Sim, excluir!'
                     };
                 }
 
                 Swal.fire(alertConfig).then(async (result) => {
-                    // Para FIIs com lucro, o preConfirm já trata tudo. Não faz nada aqui.
-                    if (isFII && temLucro) {
-                        return;
-                    }
-                    
-                    // Para outros ativos, processa a exclusão após confirmação
+                    if (taxInfo.isTaxable) return; // Já tratado no preConfirm
                     if (result.isConfirmed) {
                         this.showLoading('Excluindo ativo...');
                         try {
                             await AssetService.deleteAsset(idDoAtivo);
                             this.state.assets = this.state.assets.filter(a => a.id != idDoAtivo);
                             this.renderLocalState();
-                            this.showSuccess('Ativo removido da carteira.');
+                            this.showSuccess('Ativo removido.');
                         } catch (error) {
-                            this.showError('Erro ao deletar: ' + error.message);
+                            this.showError('Erro: ' + error.message);
                         }
                     }
                 });
-                return;
-            }
+            },
 
-            const btnEdit = e.target.closest('.btn-edit');
-            if (btnEdit) {
-                document.querySelector('#update-id').value = btnEdit.dataset.id;
-                document.querySelector('#modal-ticker-title').innerText = btnEdit.dataset.ticker;
-                document.querySelector('#update-quantity').value = btnEdit.dataset.qty;
-                document.querySelector('#update-averagePrice').value = btnEdit.dataset.price;
-                document.querySelector('#update-modal-overlay')?.classList.add('active');
-                return;
-            }
-
-            const overlay = document.querySelector('#update-modal-overlay');
-            const btnCloseModal = e.target.closest('#btn-close-modal');
-            if (btnCloseModal || e.target === overlay) {
-                overlay?.classList.remove('active');
-                return;
-            }
-
-            const btnNotif = e.target.closest('#btn-toggle-notif');
-            if (btnNotif) {
-                const icon = btnNotif.querySelector('i');
-                try {
-                    icon.classList.add('bell-animating');
-                    const novoEstado = !this.state.user.notifications_enabled;
-                    await supabase.from('profiles').upsert({ id: this.state.user.id, email: this.state.user.email, notifications_enabled: novoEstado, updated_at: new Date() });
-                    
-                    this.state.user.notifications_enabled = novoEstado;
-                    this.renderLocalState();
-
-                    Swal.fire({
-                        toast: true,
-                        position: 'top-end',
-                        icon: novoEstado ? 'success' : 'info',
-                        title: novoEstado ? 'Notificações Ativadas' : 'Notificações Desativadas',
-                        showConfirmButton: false,
-                        timer: 2000
-                    });
-
-                } catch (error) {
-                    icon.classList.remove('bell-animating');
-                    this.showError("Erro ao atualizar notificações.");
-                }
-                return;
-            }
-
-            if (e.target.closest('#btn-logout')) {
-                await AuthService.signOut();
-                window.location.reload();
-                return;
-            }
-        });
-
-        appContainer.addEventListener('change', async (e) => {
-            const sortSelect = e.target.closest('#sort-select');
-            if (sortSelect) {
-                const newSort = sortSelect.value;
-                sortSelect.disabled = true;
-                try {
-                    await supabase.from('profiles').update({ sort_by: newSort }).eq('id', this.state.user.id);
-                    this.state.user.sort_by = newSort;
-                    this.renderLocalState();
-                } catch (err) { console.error(err); }
-                return;
-            }
-
-            const brokerSelect = e.target.closest('#broker-select');
-            if (brokerSelect) {
-                const newBroker = brokerSelect.value;
-                brokerSelect.disabled = true;
-                try {
-                    await supabase.from('profiles').update({ preferred_broker: newBroker }).eq('id', this.state.user.id);
-                    this.state.user.preferred_broker = newBroker;
-                    this.renderLocalState();
-                } catch (err) { console.error(err); }
-                return;
-            }
-        });
-
-        appContainer.addEventListener('submit', async (e) => {
-            const formUpdate = e.target.closest('#form-update-asset');
-            if (formUpdate) {
-                e.preventDefault();
-                
-                const id = document.querySelector('#update-id').value;
-                const qtyInput = document.querySelector('#update-quantity');
-                const priceInput = document.querySelector('#update-averagePrice');
-
-                if (!qtyInput.value || !priceInput.value) {
-                    this.showError('Por favor, preencha a quantidade e o preço médio.');
+            onUpdateAsset: async (id, qty, price) => {
+                if (!qty || !price) {
+                    this.showError('Preencha a quantidade e o preço médio.');
                     return;
                 }
-
-                const data = {
-                    quantity: Number(qtyInput.value),
-                    averagePrice: parseFloat(priceInput.value)
-                };
                 
-                this.showLoading('Atualizando ativo...');
+                const data = { quantity: Number(qty), averagePrice: parseFloat(price) };
+                this.showLoading('Atualizando...');
 
                 try {
                     await AssetService.updateAsset(id, data);
-                    document.querySelector('#update-modal-overlay')?.classList.remove('active');
+                    AssetView.closeUpdateModal();
                     
                     const asset = this.state.assets.find(a => a.id == id);
                     if (asset) {
@@ -410,100 +248,106 @@ export const AssetController = {
                         asset.totalValue = asset.currentPrice * asset.quantity;
                     }
                     this.renderLocalState();
-                    this.showSuccess('Ativo atualizado com sucesso!');
+                    this.showSuccess('Ativo atualizado!');
                 } catch (error) {
                     this.showError("Erro: " + error.message);
                 }
-                return;
-            }
+            },
 
-            const formCreate = e.target.closest('#form-asset');
-            if (formCreate) {
-                e.preventDefault();
-                
-                const tickerInput = document.querySelector('#asset-ticker');
-                const qtyInput = document.querySelector('#quantity');
-                const priceInput = document.querySelector('#averagePrice');
-                
-                const tickerValue = tickerInput ? tickerInput.value.toUpperCase().trim() : '';
-                const qtyValue = qtyInput ? qtyInput.value : '';
-                const priceValue = priceInput ? priceInput.value : '';
-
-                if (!tickerValue || !qtyValue || !priceValue) {
-                    this.showError('Por favor, preencha o Ticker, a Quantidade e o Preço Médio.');
+            onCreateAsset: async (ticker, qty, price) => {
+                if (!ticker || !qty || !price) {
+                    this.showError('Preencha Ticker, Quantidade e Preço Médio.');
                     return;
                 }
 
-                this.showLoading('Buscando e validando ativo...');
+                this.showLoading('Buscando e validando...');
 
                 try {
-                    const alreadyExists = this.state.assets.some(asset => asset.ticker === tickerValue);
+                    const alreadyExists = this.state.assets.some(asset => asset.ticker === ticker);
                     if (alreadyExists) {
-                        this.showError(`O ativo ${tickerValue} já está cadastrado. Use a edição.`);
+                        this.showError(`O ativo ${ticker} já está cadastrado.`);
                         return;
                     }
 
-                    const isValid = await AssetService.validateTicker(tickerValue);
+                    const isValid = await AssetService.validateTicker(ticker);
                     if (!isValid) {
-                        this.showError(`O ticker "${tickerValue}" não foi encontrado na B3.`);
+                        this.showError(`O ticker "${ticker}" não foi encontrado na B3.`);
                         return;
                     }
 
-                    Swal.fire({
-                        title: 'Salvando na carteira...',
-                        allowOutsideClick: false,
-                        didOpen: () => { Swal.showLoading(); }
-                    });
-
-                    const newAsset = {
-                        ticker: tickerValue,
-                        quantity: Number(qtyValue),
-                        averagePrice: parseFloat(priceValue)
-                    };
-
+                    this.showLoading('Salvando na carteira...');
+                    
+                    const newAsset = { ticker, quantity: Number(qty), averagePrice: parseFloat(price) };
                     await AssetService.addAsset(newAsset);
 
-                    if (!TickerDictionary.list.includes(tickerValue)) {
-                        supabase.from('tickers_descobertos').insert([{ ticker: tickerValue }]).then();
+                    if (!TickerDictionary.list.includes(ticker)) {
+                        supabase.from('tickers_descobertos').insert([{ ticker }]).then();
                     }
 
-                    document.querySelector('#add-asset-drawer')?.classList.add('collapsed');
-                    
-                    if (tickerInput) tickerInput.value = '';
-                    if (qtyInput) qtyInput.value = '';
-                    if (priceInput) priceInput.value = '';
-
+                    AssetView.closeAddDrawer();
+                    AssetView.clearAddForm();
                     await this.init();
-                    this.showSuccess(`${tickerValue} adicionado com sucesso!`);
+                    this.showSuccess(`${ticker} adicionado!`);
                 } catch (error) {
                     this.showError('Erro ao processar sua solicitação.');
                 }
-            }
-        });
+            },
 
-        appContainer.addEventListener('focusout', async (e) => {
-            if (e.target && e.target.id === 'asset-ticker') {
-                const ticker = e.target.value.toUpperCase().trim();
-                const priceInput = document.querySelector('#averagePrice');
-                
-                if (ticker && ticker.length >= 4 && priceInput && !priceInput.value) {
-                    const originalPlaceholder = priceInput.placeholder;
-                    priceInput.placeholder = "Buscando...";
-                    priceInput.disabled = true; 
+            onToggleNotif: async (icon) => {
+                if (icon) icon.classList.add('bell-animating');
+                try {
+                    const novoEstado = !this.state.user.notifications_enabled;
+                    await supabase.from('profiles').upsert({ id: this.state.user.id, email: this.state.user.email, notifications_enabled: novoEstado, updated_at: new Date() });
                     
+                    this.state.user.notifications_enabled = novoEstado;
+                    this.renderLocalState();
+
+                    Swal.fire({ toast: true, position: 'top-end', icon: novoEstado ? 'success' : 'info', title: novoEstado ? 'Notificações Ativadas' : 'Desativadas', showConfirmButton: false, timer: 2000 });
+                } catch (error) {
+                    if (icon) icon.classList.remove('bell-animating');
+                    this.showError("Erro ao atualizar notificações.");
+                }
+            },
+
+            onLogout: async () => {
+                await AuthService.signOut();
+                window.location.reload();
+            },
+
+            onSortChange: async (newSort) => {
+                try {
+                    await supabase.from('profiles').update({ sort_by: newSort }).eq('id', this.state.user.id);
+                    this.state.user.sort_by = newSort;
+                    this.renderLocalState();
+                } catch (err) { console.error(err); }
+            },
+
+            onBrokerChange: async (newBroker) => {
+                try {
+                    await supabase.from('profiles').update({ preferred_broker: newBroker }).eq('id', this.state.user.id);
+                    this.state.user.preferred_broker = newBroker;
+                    this.renderLocalState();
+                } catch (err) { console.error(err); }
+            },
+
+            onTickerFocusOut: async (ticker) => {
+                if (ticker && ticker.length >= 4) {
+                    AssetView.setPriceLoading(true);
                     try {
                         const data = await AssetService.getPrice(ticker);
-                        if (data && data.price > 0 && !priceInput.value) {
-                            priceInput.value = data.price.toFixed(2);
+                        if (data && data.price > 0) {
+                            AssetView.setPriceValue(data.price.toFixed(2));
                         }
                     } catch (err) {
-                        console.error("Erro ao buscar preço no Google:", err);
+                        console.error(err);
                     } finally {
-                        priceInput.placeholder = originalPlaceholder;
-                        priceInput.disabled = false;
+                        AssetView.setPriceLoading(false);
                     }
                 }
             }
-        });
+        };
+
+        // Passa o pacote de regras para a View
+        AssetView.bindEvents(handlers);
     }
 };
