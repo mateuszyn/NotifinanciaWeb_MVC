@@ -7,10 +7,21 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Node & Build
 node_modules
 dist
 dist-ssr
 *.local
+
+# Python & Ambiente Virtual
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Vercel
+.vercel/
 
 # Editor directories and files
 .vscode/*
@@ -23,6 +34,6 @@ dist-ssr
 *.sln
 *.sw?
 
+# Environment Variables
 .env
 .env.local
-
