@@ -32,8 +32,17 @@ def market_data(tickers: str) -> Dict[str, Any]:
         return {"results": {}}
 
     results = get_market_data(symbols)
+    normalized_results = {}
 
-    return {"results": results}
+    for symbol, payload in results.items():
+        normalized_results[symbol] = {
+            "ticker": payload.get("ticker", symbol),
+            "price": payload.get("price"),
+            "changePercent": payload.get("changePercent"),
+            "yieldpct": float(payload.get("yieldpct") or 0),
+        }
+
+    return {"results": normalized_results}
 
 
 handler = Mangum(app)

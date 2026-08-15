@@ -30,8 +30,16 @@ export const AssetView = {
             else if (profitPct < 0) borderClass = dailyChange >= 0 ? 'border-loss-dia-pos' : 'border-loss-viva-neg';
 
             const safeTicker = Security.escapeHTML(asset.ticker);
+            const yieldVal = Number(asset.yieldpct || 0);
+            const divMensal = Number(asset.divMensal || 0);
+            const divAnual = Number(asset.divAnual || 0);
+            const cotasPorMes = Number(asset.cotasPorMes || 0);
+            const cotasPorAno = Number(asset.cotasPorAno || 0);
+            const cotasRestantes = Number(asset.cotasParaBolaDeNeve > 0
+                ? Math.max(0, Math.ceil(asset.cotasParaBolaDeNeve - asset.quantity))
+                : 0);
 
-            const actionButtons = user.isGuest 
+            const actionButtons = user.isGuest
                 ? `<span class="badge bg-secondary">Dados de Exemplo</span>`
                 : `<button class="btn btn-link p-0 text-primary btn-edit" data-id="${asset.id}" data-ticker="${safeTicker}" data-qty="${asset.quantity}" data-price="${asset.averagePrice}">
                        <i class="bi bi-pencil-square fs-4"></i>
@@ -40,27 +48,67 @@ export const AssetView = {
                        <i class="bi bi-trash3 fs-4"></i>
                    </button>`;
 
-            // Bloco de Dividendos (Retornado com sucesso!)
-            const yieldVal = asset.yieldpct || 0;
-            const divMensal = asset.divMensal || 0;
-            const divAnual = asset.divAnual || 0;
+            const bolasDeNeveHtml = asset.currentPrice > 0
+                ? (asset.atingiuBolaDeNeve
+                    ? `<p class="small text-success mb-2 mt-2">Você atingiu a Bola de Neve! (${asset.quantity} Cotas)</p>`
+                    : `<p class="small text-secondary mb-2 mt-2">Faltam ${cotasRestantes} cotas para a Bola de Neve</p>`)
+                : '<div class="skeleton-loader" style="height: 18px; width: 82%; margin: 12px 0 8px;"></div>';
 
-            const dividendSection = `
-                <div class="mt-3 pt-2 border-top border-secondary text-start" style="font-size: 0.85rem;">
-                    <div class="d-flex justify-content-between text-secondary mb-1">
-                        <span>Dividend Yield:</span>
-                        <b class="text-success">${yieldVal.toFixed(2)}% a.a.</b>
+            const priceAndTrendHtml = asset.currentPrice === 0
+                ? `
+                    <div class="row border-top pt-2">
+                        <div class="col-6 border-end">
+                            <p class="price-label">P. Médio</p>
+                            <div class="skeleton-loader" style="height: 20px; width: 100%;"></div>
+                        </div>
+                        <div class="col-6 ps-3">
+                            <p class="price-label">Preço Atual</p>
+                            <div class="skeleton-loader" style="height: 20px; width: 100%;"></div>
+                        </div>
                     </div>
-                    <div class="d-flex justify-content-between text-secondary mb-1">
-                        <span>Provento Mensal (Est.):</span>
-                        <b class="text-white">R$ ${divMensal.toFixed(2)}</b>
+                `
+                : `
+                    <div class="row border-top pt-2">
+                        <div class="col-6 border-end">
+                            <p class="price-label">P. Médio</p>
+                            <p class="price-value">R$ ${asset.averagePrice.toFixed(2)} <span class="${profitTextClass} small">(${profitPct.toFixed(2)}%)</span></p>
+                        </div>
+                        <div class="col-6 ps-3">
+                            <p class="price-label">Preço Atual</p>
+                            <p class="price-value">R$ ${asset.currentPrice.toFixed(2)} <span class="${dailyTextClass} small">(${dailyChange >= 0 ? '+' : ''}${dailyChange.toFixed(2)}%)</span></p>
+                        </div>
                     </div>
-                    <div class="d-flex justify-content-between text-secondary">
-                        <span>Provento Anual (Est.):</span>
-                        <b class="text-white">R$ ${divAnual.toFixed(2)}</b>
+                `;
+
+            const dividendSection = asset.currentPrice === 0
+                ? `
+                    <div class="mt-3 pt-2 border-top border-secondary text-start" style="font-size: 0.85rem;">
+                        <div class="skeleton-loader mb-2" style="height: 22px; width: 46%;"></div>
+                        <div class="skeleton-loader mb-2" style="height: 18px; width: 100%;"></div>
+                        <div class="skeleton-loader mb-2" style="height: 18px; width: 100%;"></div>
+                        <div class="skeleton-loader" style="height: 18px; width: 76%;"></div>
                     </div>
-                </div>
-            `;
+                `
+                : `
+                    <div class="mt-3 pt-2 border-top border-secondary text-start" style="font-size: 0.85rem;">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-success">Yield Anual: ${yieldVal.toFixed(2)}%</span>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <span class="text-secondary small">Renda Mensal:</span>
+                                <div class="text-white fw-bold">R$ ${divMensal.toFixed(2)}</div>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-secondary small">Renda Anual:</span>
+                                <div class="text-white fw-bold">R$ ${divAnual.toFixed(2)}</div>
+                            </div>
+                        </div>
+                        <div class="small text-secondary">
+                            Gera ${cotasPorMes.toFixed(2)} cota(s) / mês | Gera ${cotasPorAno.toFixed(2)} cota(s) / ano
+                        </div>
+                    </div>
+                `;
 
             return `
                 <div class="col-12 col-md-6 col-lg-4 mb-4">
@@ -71,26 +119,20 @@ export const AssetView = {
                                 ${actionButtons}
                             </div>
                         </div>
+
+                        ${bolasDeNeveHtml}
+
                         <div class="row mb-3">
                             <div class="col-12">
                                 <p class="price-value mb-0">Total: R$ ${(asset.quantity * asset.currentPrice).toFixed(2)}</p>
                                 <p class="small text-secondary fw-bold">QTD: ${asset.quantity}</p>
                             </div>
                         </div>
-                        <div class="row border-top pt-2">
-                            <div class="col-6 border-end">
-                                <p class="price-label">P. Médio</p>
-                                <p class="price-value">R$ ${asset.averagePrice.toFixed(2)} <span class="${profitTextClass} small">(${profitPct.toFixed(2)}%)</span></p>
-                            </div>
-                            <div class="col-6 ps-3">
-                                <p class="price-label">Preço Atual</p>
-                                <p class="price-value">R$ ${asset.currentPrice.toFixed(2)} <span class="${dailyTextClass} small">(${dailyChange >= 0 ? '+' : ''}${dailyChange.toFixed(2)}%)</span></p>
-                            </div>
-                        </div>
-                        
+
+                        ${priceAndTrendHtml}
                         ${dividendSection}
 
-                        <a href="${brokerInfo.webUrl}" target="_blank" class="btn w-100 mt-3 d-flex align-items-center justify-content-center gap-2" 
+                        <a href="${brokerInfo.webUrl}" target="_blank" class="btn w-100 mt-3 d-flex align-items-center justify-content-center gap-2"
                            style="background-color: ${brokerInfo.color}; color: ${brokerInfo.textColor}; border: none; font-weight: bold; border-radius: 8px; height: 45px;">
                            <i class="bi bi-box-arrow-up-right"></i> Operar na ${currentBroker}
                         </a>

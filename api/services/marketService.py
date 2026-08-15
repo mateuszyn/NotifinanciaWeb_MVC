@@ -105,15 +105,14 @@ def get_market_data(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
                 dividend_yield = info.get("dividendYield")
                 trailing_yield = info.get("trailingAnnualDividendYield")
 
-                if dividend_yield is None and trailing_yield is None:
-                    raise ValueError("yield not available in info")
-
                 raw_yield = dividend_yield if dividend_yield not in (None, 0) else trailing_yield
                 if raw_yield is None:
                     raise ValueError("yield empty")
 
                 yieldpct = float(raw_yield)
-                if yieldpct > 0 and yieldpct < 1.0:
+                if yieldpct > 1:
+                    yieldpct = yieldpct
+                elif yieldpct > 0:
                     yieldpct = yieldpct * 100
                 yieldpct = round(yieldpct, 2)
             except Exception:

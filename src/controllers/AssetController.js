@@ -18,60 +18,60 @@ export const AssetController = {
 
         const { data: profile } = await supabase
             .from('profiles')
-            .select('notifications_enabled, sort_by, preferred_broker') 
+            .select('notifications_enabled, sort_by, preferred_broker')
             .eq('id', user.id)
             .maybeSingle();
 
         user.notifications_enabled = profile?.notifications_enabled || false;
         user.sort_by = profile?.sort_by || 'pm_asc';
-        user.preferred_broker = profile?.preferred_broker || 'Nubank'; 
+        user.preferred_broker = profile?.preferred_broker || 'Nubank';
 
         this.state.user = user;
 
-        // userAssets já são instâncias puras da classe Asset
         const userAssets = await assetRepository.getAssets();
-
-        if (userAssets.length > 0) {
-            const allTickers = userAssets.map(a => a.ticker);
-            const marketData = await assetRepository.getMarketPrices(allTickers);
-            
-            const livePrices = {};
-            if (marketData.results) {
-                marketData.results.forEach(res => {
-                    livePrices[res.symbol] = res;
-                });
-            }
-
-            // O Model assume a atualização de mercado incluindo os dividendos
-            userAssets.forEach(asset => {
-                const live = livePrices[asset.ticker] || { 
-                    regularMarketPrice: 0, 
-                    regularMarketChangePercent: 0,
-                    yieldpct: 0
-                };
-
-                const currentPrice = live.regularMarketPrice || live.price || 0;
-                const dailyChange = live.regularMarketChangePercent || live.changePercent || 0;
-                const yieldPct = live.yieldpct || 0;
-                
-                // Calcula proventos mensais e anuais baseado na quantidade
-                const divAnual = currentPrice * asset.quantity * (yieldPct / 100);
-                const divMensal = divAnual / 12;
-
-                asset.setMarketData(currentPrice, dailyChange, divMensal, divAnual, yieldPct);
-            });
-
-            this.state.assets = userAssets;
-        } else {
-            this.state.assets = [];
-        }
-
+        this.state.assets = userAssets;
         this.renderLocalState();
 
         if (!this.state.isEventsDelegated) {
             this.setupDelegatedEvents();
             this.state.isEventsDelegated = true;
         }
+
+        if (userAssets.length === 0) {
+            return;
+        }
+
+        const allTickers = userAssets.map(asset => asset.ticker);
+        const marketData = await assetRepository.getMarketPrices(allTickers);
+        const results = Array.isArray(marketData?.results)
+            ? marketData.results
+            : Object.values(marketData?.results ?? {});
+
+        const livePrices = {};
+        results.forEach(result => {
+            const symbol = result.symbol || result.ticker;
+            if (symbol) {
+                livePrices[symbol] = result;
+            }
+        });
+
+        userAssets.forEach(asset => {
+            const live = livePrices[asset.ticker] || {
+                price: 0,
+                changePercent: 0,
+                yieldpct: 0
+            };
+
+            const currentPrice = Number(live.price ?? live.regularMarketPrice ?? 0) || 0;
+            const dailyChange = Number(live.changePercent ?? live.regularMarketChangePercent ?? 0) || 0;
+            const yieldPct = Number(live.yieldpct ?? 0) || 0;
+            const divAnual = currentPrice * asset.quantity * (yieldPct / 100);
+            const divMensal = divAnual / 12;
+
+            asset.setMarketData(currentPrice, dailyChange, divMensal, divAnual, yieldPct);
+        });
+
+        this.renderLocalState();
     },
 
     renderLocalState() {
