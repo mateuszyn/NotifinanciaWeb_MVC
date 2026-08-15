@@ -8,14 +8,22 @@ export class Asset {
         // Dados vindos do mercado
         this.currentPrice = 0;
         this.dailyChange = 0;
+
+        // Dados de Dividendos e Proventos (Essencial para a estratégia Barsi)
+        this.divMensal = 0;
+        this.divAnual = 0;
+        this.yieldpct = 0;
     }
 
     /**
-     * Atualiza os preços vindos da API
+     * Atualiza os preços e dados de proventos vindos da API
      */
-    setMarketData(currentPrice, dailyChange) {
+    setMarketData(currentPrice, dailyChange, divMensal = 0, divAnual = 0, yieldpct = 0) {
         this.currentPrice = Number(currentPrice) || 0;
         this.dailyChange = Number(dailyChange) || 0;
+        this.divMensal = Number(divMensal) || 0;
+        this.divAnual = Number(divAnual) || 0;
+        this.yieldpct = Number(yieldpct) || 0;
     }
 
     /**

@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { Asset } from '../models/Asset.js';
 
-export const AssetService = {
+export const assetRepository = {
     // --- BLINDAGEM JWT ---
     // Captura o token de sessão ativo para provar que a requisição é legítima
     async _getAuthHeaders() {

@@ -1,8 +1,8 @@
-import { AssetService } from '../services/assetService.js';
+import { assetRepository } from '../infrastructure/assetRepository.js';
 import { AssetView } from '../views/AssetView.js';
 import { AddAssetView } from '../views/AddAssetView.js';
-import { AuthService } from '../services/authService.js';
-import { supabase } from '../services/supabaseClient.js';
+import { authRepository } from '../infrastructure/authRepository.js';
+import { supabase } from '../infrastructure/supabaseClient.js';
 import { TickerDictionary } from '../models/TickerDictionary.js';
 import { TaxCalculator } from '../domain/TaxCalculator.js';
 
@@ -14,7 +14,7 @@ export const AssetController = {
     },
 
     async init() {
-        const user = await AuthService.getUser();
+        const user = await authRepository.getUser();
 
         const { data: profile } = await supabase
             .from('profiles')
@@ -29,11 +29,11 @@ export const AssetController = {
         this.state.user = user;
 
         // userAssets já são instâncias puras da classe Asset
-        const userAssets = await AssetService.getAssets();
+        const userAssets = await assetRepository.getAssets();
 
         if (userAssets.length > 0) {
             const allTickers = userAssets.map(a => a.ticker);
-            const marketData = await AssetService.getMarketPrices(allTickers);
+            const marketData = await assetRepository.getMarketPrices(allTickers);
             
             const livePrices = {};
             if (marketData.results) {
@@ -42,10 +42,23 @@ export const AssetController = {
                 });
             }
 
-            // O Model assume a atualização de mercado sem recriar objetos soltos
+            // O Model assume a atualização de mercado incluindo os dividendos
             userAssets.forEach(asset => {
-                const live = livePrices[asset.ticker] || { regularMarketPrice: 0, regularMarketChangePercent: 0 };
-                asset.setMarketData(live.regularMarketPrice, live.regularMarketChangePercent);
+                const live = livePrices[asset.ticker] || { 
+                    regularMarketPrice: 0, 
+                    regularMarketChangePercent: 0,
+                    yieldpct: 0
+                };
+
+                const currentPrice = live.regularMarketPrice || live.price || 0;
+                const dailyChange = live.regularMarketChangePercent || live.changePercent || 0;
+                const yieldPct = live.yieldpct || 0;
+                
+                // Calcula proventos mensais e anuais baseado na quantidade
+                const divAnual = currentPrice * asset.quantity * (yieldPct / 100);
+                const divMensal = divAnual / 12;
+
+                asset.setMarketData(currentPrice, dailyChange, divMensal, divAnual, yieldPct);
             });
 
             this.state.assets = userAssets;
@@ -120,7 +133,7 @@ export const AssetController = {
                 
                 AssetView.setPriceLoading(true);
                 try {
-                    const data = await AssetService.getPrice(ticker);
+                    const data = await assetRepository.getPrice(ticker);
                     if (data && data.price > 0) {
                         AssetView.setPriceValue(data.price.toFixed(2));
                     } else {
@@ -175,7 +188,7 @@ export const AssetController = {
                         preConfirm: async () => {
                             Swal.showLoading();
                             try {
-                                await AssetService.deleteAsset(idDoAtivo);
+                                await assetRepository.deleteAsset(idDoAtivo);
                                 this.state.assets = this.state.assets.filter(a => a.id != idDoAtivo);
                                 this.renderLocalState();
                                 Swal.update({ title: 'Removido!', icon: 'success', showConfirmButton: false });
@@ -203,7 +216,7 @@ export const AssetController = {
                     if (result.isConfirmed) {
                         this.showLoading('Excluindo ativo...');
                         try {
-                            await AssetService.deleteAsset(idDoAtivo);
+                            await assetRepository.deleteAsset(idDoAtivo);
                             this.state.assets = this.state.assets.filter(a => a.id != idDoAtivo);
                             this.renderLocalState();
                             this.showSuccess('Ativo removido.');
@@ -224,12 +237,11 @@ export const AssetController = {
                 this.showLoading('Atualizando...');
 
                 try {
-                    await AssetService.updateAsset(id, data);
+                    await assetRepository.updateAsset(id, data);
                     AssetView.closeUpdateModal();
                     
                     const asset = this.state.assets.find(a => a.id == id);
                     if (asset) {
-                        // Apenas atualiza os valores brutos. variacaoPM e totalValue são recalculados dinamicamente via Getters!
                         asset.quantity = data.quantity;
                         asset.averagePrice = data.averagePrice;
                     }
@@ -255,7 +267,7 @@ export const AssetController = {
                         return;
                     }
 
-                    const isValid = await AssetService.validateTicker(ticker);
+                    const isValid = await assetRepository.validateTicker(ticker);
                     if (!isValid) {
                         this.showError(`O ticker "${ticker}" não foi encontrado na B3.`);
                         return;
@@ -264,7 +276,7 @@ export const AssetController = {
                     this.showLoading('Salvando na carteira...');
                     
                     const newAsset = { ticker, quantity: Number(qty), averagePrice: parseFloat(price) };
-                    await AssetService.addAsset(newAsset);
+                    await assetRepository.addAsset(newAsset);
 
                     if (!TickerDictionary.list.includes(ticker)) {
                         supabase.from('tickers_descobertos').insert([{ ticker }]).then();
@@ -296,7 +308,7 @@ export const AssetController = {
             },
 
             onLogout: async () => {
-                await AuthService.signOut();
+                await authRepository.signOut();
                 window.location.reload();
             },
 
@@ -320,7 +332,7 @@ export const AssetController = {
                 if (ticker && ticker.length >= 4) {
                     AssetView.setPriceLoading(true);
                     try {
-                        const data = await AssetService.getPrice(ticker);
+                        const data = await assetRepository.getPrice(ticker);
                         if (data && data.price > 0) {
                             AssetView.setPriceValue(data.price.toFixed(2));
                         }

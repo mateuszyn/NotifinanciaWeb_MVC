@@ -1,4 +1,5 @@
-import { Security } from '../services/security.js';
+import { Security } from '../infrastructure/security.js';
+import { BROKERS } from '../logic/brokers.js';
 
 export const AssetView = {
     render(assets, user) {
@@ -9,15 +10,8 @@ export const AssetView = {
         const firstName = firstNameRaw.charAt(0).toUpperCase() + firstNameRaw.slice(1);
         const userName = Security.escapeHTML(firstName);
         
-        const BROKERS = {
-            'Nubank': { color: '#820AD1', textColor: '#FFFFFF', url: 'https://play.google.com/store/apps/details?id=com.nu.production' },
-            'Inter': { color: '#FF7A00', textColor: '#FFFFFF', url: 'https://play.google.com/store/apps/details?id=br.com.intermedium' },
-            'XP': { color: '#212529', textColor: '#FFFFFF', url: 'https://play.google.com/store/apps/details?id=br.com.xp.carteira' },
-            'Rico': { color: '#005AAA', textColor: '#FF8A00', url: 'https://play.google.com/store/apps/details?id=br.com.rico.mobile' }
-        };
-
         const currentBroker = user.preferred_broker || 'Nubank';
-        const brokerInfo = BROKERS[currentBroker];
+        const brokerInfo = BROKERS[currentBroker] || BROKERS['Nubank'];
 
         const isNotifActive = user.notifications_enabled;
         const bellIcon = isNotifActive ? 'bi-bell-fill text-warning' : 'bi-bell text-secondary';
@@ -46,6 +40,28 @@ export const AssetView = {
                        <i class="bi bi-trash3 fs-4"></i>
                    </button>`;
 
+            // Bloco de Dividendos (Retornado com sucesso!)
+            const yieldVal = asset.yieldpct || 0;
+            const divMensal = asset.divMensal || 0;
+            const divAnual = asset.divAnual || 0;
+
+            const dividendSection = `
+                <div class="mt-3 pt-2 border-top border-secondary text-start" style="font-size: 0.85rem;">
+                    <div class="d-flex justify-content-between text-secondary mb-1">
+                        <span>Dividend Yield:</span>
+                        <b class="text-success">${yieldVal.toFixed(2)}% a.a.</b>
+                    </div>
+                    <div class="d-flex justify-content-between text-secondary mb-1">
+                        <span>Provento Mensal (Est.):</span>
+                        <b class="text-white">R$ ${divMensal.toFixed(2)}</b>
+                    </div>
+                    <div class="d-flex justify-content-between text-secondary">
+                        <span>Provento Anual (Est.):</span>
+                        <b class="text-white">R$ ${divAnual.toFixed(2)}</b>
+                    </div>
+                </div>
+            `;
+
             return `
                 <div class="col-12 col-md-6 col-lg-4 mb-4">
                     <div class="asset-card ${borderClass}">
@@ -72,7 +88,9 @@ export const AssetView = {
                             </div>
                         </div>
                         
-                        <a href="${brokerInfo.url}" target="_blank" class="btn w-100 mt-3 d-flex align-items-center justify-content-center gap-2" 
+                        ${dividendSection}
+
+                        <a href="${brokerInfo.webUrl}" target="_blank" class="btn w-100 mt-3 d-flex align-items-center justify-content-center gap-2" 
                            style="background-color: ${brokerInfo.color}; color: ${brokerInfo.textColor}; border: none; font-weight: bold; border-radius: 8px; height: 45px;">
                            <i class="bi bi-box-arrow-up-right"></i> Operar na ${currentBroker}
                         </a>
@@ -207,7 +225,6 @@ export const AssetView = {
             </div>`;
     },
 
-    // --- MÉTODOS DE MANIPULAÇÃO DO DOM (Puros Visuais) ---
     showUpdateModal(id, ticker, qty, price) {
         document.querySelector('#update-id').value = id;
         document.querySelector('#modal-ticker-title').innerText = ticker;
@@ -257,27 +274,23 @@ export const AssetView = {
         document.querySelector('#averagePrice')?.focus();
     },
 
-    // --- O PADRÃO BIND: Recebe as intenções do usuário e avisa o Controller ---
     bindEvents(handlers) {
         const app = document.querySelector('#app');
         if (!app) return;
 
         app.addEventListener('click', (e) => {
-            // Tentar buscar preço novamente
             if (e.target.closest('#btn-retry-price')) {
                 const ticker = document.querySelector('#asset-ticker')?.value.toUpperCase().trim();
                 handlers.onRetryPrice(ticker);
                 return;
             }
 
-            // Deletar Ativo
             const btnDelete = e.target.closest('.btn-delete');
             if (btnDelete) {
                 handlers.onDeleteAsset(btnDelete.dataset.id);
                 return;
             }
 
-            // Abrir Modal de Edição (A View faz sozinha, não incomoda o Controller)
             const btnEdit = e.target.closest('.btn-edit');
             if (btnEdit) {
                 this.showUpdateModal(
@@ -289,14 +302,12 @@ export const AssetView = {
                 return;
             }
 
-            // Fechar Modal
             const overlay = document.querySelector('#update-modal-overlay');
             if (e.target.closest('#btn-close-modal') || e.target === overlay) {
                 this.closeUpdateModal();
                 return;
             }
 
-            // Toggle Notificação
             const btnNotif = e.target.closest('#btn-toggle-notif');
             if (btnNotif) {
                 const icon = btnNotif.querySelector('i');
@@ -304,7 +315,6 @@ export const AssetView = {
                 return;
             }
 
-            // Logout
             if (e.target.closest('#btn-logout')) {
                 handlers.onLogout();
                 return;
@@ -352,7 +362,6 @@ export const AssetView = {
         app.addEventListener('focusout', (e) => {
             if (e.target && e.target.id === 'asset-ticker') {
                 const priceInput = document.querySelector('#averagePrice');
-                // Só dispara a busca se o campo de preço estiver vazio
                 if (priceInput && !priceInput.value) {
                     handlers.onTickerFocusOut(e.target.value.toUpperCase().trim());
                 }

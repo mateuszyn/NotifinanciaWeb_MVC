@@ -1,8 +1,8 @@
 import './assets/style.css';
-import { AuthService } from './services/authService.js';
+import { authRepository } from './infrastructure/authRepository.js';
 import { AssetController } from './controllers/AssetController.js';
 import { AssetView } from './views/AssetView.js';
-import { supabase } from './services/supabaseClient.js'; // IMPORTANTE: Precisamos importar o Supabase aqui
+import { supabase } from './infrastructure/supabaseClient.js';
 
 // O "Vigia": Escuta as mudanças de estado de autenticação em tempo real
 supabase.auth.onAuthStateChange((event, session) => {
@@ -71,7 +71,7 @@ function renderGuestMode() {
     const btnLogin = document.querySelector('#btn-login-google');
     if (btnLogin && !btnLogin.hasAttribute('data-listener')) {
         btnLogin.addEventListener('click', () => {
-            AuthService.signInWithGoogle();
+            authRepository.signInWithGoogle();
         });
         btnLogin.setAttribute('data-listener', 'true');
     }
