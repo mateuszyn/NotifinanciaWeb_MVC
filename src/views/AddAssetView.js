@@ -1,4 +1,4 @@
-import { TickerDictionary } from '../models/TickerDictionary.js';
+import { TickerDictionary } from '../logic/tickerDictionary.js';
 import { Security } from '../infrastructure/security.js';
 
 export const AddAssetView = {

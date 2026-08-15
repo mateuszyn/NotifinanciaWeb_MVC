@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 
-from .services.market_service import get_market_data
+from .services.marketService import get_market_data
 
 
 app = FastAPI(title="Notifinancia Market Data API")

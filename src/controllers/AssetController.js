@@ -1,10 +1,10 @@
 import { assetRepository } from '../infrastructure/assetRepository.js';
-import { AssetView } from '../views/AssetView.js';
-import { AddAssetView } from '../views/AddAssetView.js';
+import { AssetView } from '../views/assetView.js';
+import { AddAssetView } from '../views/addAssetView.js';
 import { authRepository } from '../infrastructure/authRepository.js';
 import { supabase } from '../infrastructure/supabaseClient.js';
-import { TickerDictionary } from '../models/TickerDictionary.js';
-import { TaxCalculator } from '../domain/TaxCalculator.js';
+import { TickerDictionary } from '../logic/tickerDictionary.js';
+import { TaxCalculator } from '../domain/taxCalculator.js';
 
 export const AssetController = {
     state: {
