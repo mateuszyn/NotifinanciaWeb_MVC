@@ -1,9 +1,34 @@
+import logging
 from typing import Any, Dict, List, Optional
-import re
 
 import pandas as pd
 import requests
 import yfinance as yf
+
+logger = logging.getLogger(__name__)
+
+
+def _build_session() -> requests.Session:
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+    })
+
+    try:
+        session.get("https://fc.yahoo.com", timeout=5)
+    except Exception:
+        pass
+
+    return session
 
 
 def _should_append_sa(symbol: str) -> bool:
@@ -50,38 +75,32 @@ def get_market_data(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
     except Exception:
         batch_data = None
 
-    session = requests.Session()
-    session.headers.update({
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        )
-    })
-
+    session = _build_session()
     results: Dict[str, Dict[str, Any]] = {}
 
     for original_symbol, query_symbol in mapping.items():
         try:
             tk = yf.Ticker(query_symbol, session=session)
-            history = tk.history(period="2d", auto_adjust=False)
+            history = tk.history(period="5d", auto_adjust=False)
 
             price: Optional[float] = None
             change_percent: Optional[float] = None
 
             if not history.empty:
-                price = float(history["Close"].iloc[-1])
-                if len(history) >= 2:
-                    previous = float(history["Close"].iloc[-2])
-                    if previous > 0:
-                        change_percent = round(((price - previous) / previous) * 100, 2)
+                close_series = pd.to_numeric(history.get("Close"), errors="coerce").dropna()
+                if not close_series.empty:
+                    price = float(close_series.iloc[-1])
+                    if len(close_series) >= 2:
+                        previous = float(close_series.iloc[-2])
+                        if previous > 0:
+                            change_percent = round(((price - previous) / previous) * 100, 2)
 
             # fallback to batch data
             if price is None and batch_data is not None:
                 if isinstance(batch_data.columns, pd.MultiIndex):
                     for col in batch_data.columns:
-                        # col is like ("Close", "TICKER.SA")
                         if col[0] == "Close" and col[1] == query_symbol:
-                            close_series = batch_data[col].dropna()
+                            close_series = pd.to_numeric(batch_data[col], errors="coerce").dropna()
                             if not close_series.empty:
                                 price = float(close_series.iloc[-1])
                                 if len(close_series) >= 2:
@@ -90,7 +109,7 @@ def get_market_data(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
                                         change_percent = round(((price - previous) / previous) * 100, 2)
                                 break
                 elif "Close" in batch_data.columns:
-                    close_series = batch_data["Close"].dropna()
+                    close_series = pd.to_numeric(batch_data["Close"], errors="coerce").dropna()
                     if isinstance(close_series, pd.Series) and not close_series.empty:
                         price = float(close_series.iloc[-1])
                         if len(close_series) >= 2:
@@ -98,7 +117,27 @@ def get_market_data(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
                             if previous > 0:
                                 change_percent = round(((price - previous) / previous) * 100, 2)
 
-            # yield calculation
+            if price is None:
+                results[original_symbol] = {
+                    "ticker": original_symbol,
+                    "price": None,
+                    "changePercent": None,
+                    "yieldpct": 0.0,
+                    "error": "Preço indisponível no Yahoo Finance.",
+                }
+                continue
+
+            price = float(price)
+            if price <= 0:
+                results[original_symbol] = {
+                    "ticker": original_symbol,
+                    "price": None,
+                    "changePercent": change_percent,
+                    "yieldpct": 0.0,
+                    "error": "Preço inválido ou igual a zero.",
+                }
+                continue
+
             yieldpct = 0.0
             try:
                 info = getattr(tk, "info", None) or {}
@@ -106,41 +145,35 @@ def get_market_data(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
                 trailing_yield = info.get("trailingAnnualDividendYield")
 
                 raw_yield = dividend_yield if dividend_yield not in (None, 0) else trailing_yield
-                if raw_yield is None:
-                    raise ValueError("yield empty")
-
-                yieldpct = float(raw_yield)
-                if 0 < yieldpct < 1:
-                    yieldpct = yieldpct * 100
-                yieldpct = round(yieldpct, 2)
+                if raw_yield is not None:
+                    yieldpct = float(raw_yield)
+                    if 0 < yieldpct < 1:
+                        yieldpct = yieldpct * 100
+                    yieldpct = round(yieldpct, 2)
             except Exception as exc:
-                print(f"[marketService] Falha ao obter yield via info para {query_symbol}: {exc}")
+                logger.warning("Falha ao obter yield via info para %s: %s", query_symbol, exc)
+
+            if yieldpct == 0.0:
                 try:
                     dividends = getattr(tk, "dividends", None)
-                    if dividends is None or dividends.empty:
-                        raise ValueError("no dividends")
+                    if dividends is None:
+                        raise ValueError("dividends not found")
 
                     if not isinstance(dividends, pd.Series):
                         dividends = pd.Series(dividends)
 
+                    if dividends.empty:
+                        raise ValueError("dividends empty")
+
                     cutoff = pd.Timestamp.now().normalize() - pd.DateOffset(years=1)
                     recent_dividends = dividends[dividends.index >= cutoff]
-
                     if recent_dividends.empty:
                         raise ValueError("no recent dividends in last 12 months")
 
-                    total_dividends = float(recent_dividends.sum())
-                    current_price = price
-                    if current_price is None or current_price <= 0:
-                        h = tk.history(period="1d", auto_adjust=False)
-                        current_price = float(h["Close"].iloc[-1]) if not h.empty else None
-
-                    if current_price is None or current_price <= 0:
-                        raise ValueError("no price")
-
-                    yieldpct = round((total_dividends / current_price) * 100, 2)
+                    total_dividends = float(pd.to_numeric(recent_dividends, errors="coerce").sum())
+                    yieldpct = round((total_dividends / price) * 100, 2)
                 except Exception as fallback_exc:
-                    print(f"[marketService] Fallback de dividendos falhou para {query_symbol}: {fallback_exc}")
+                    logger.warning("Fallback de dividendos falhou para %s: %s", query_symbol, fallback_exc)
                     yieldpct = 0.0
 
             results[original_symbol] = {
@@ -149,12 +182,13 @@ def get_market_data(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
                 "changePercent": change_percent,
                 "yieldpct": yieldpct,
             }
-        except Exception:
+        except Exception as exc:
+            logger.warning("Falha ao consultar o ticker %s: %s", query_symbol, exc)
             results[original_symbol] = {
                 "ticker": original_symbol,
                 "price": None,
                 "changePercent": None,
-                "yieldpct": None,
+                "yieldpct": 0.0,
                 "error": "Falha ao consultar o ticker.",
             }
 
