@@ -35,9 +35,7 @@ export const AssetView = {
             const divAnual = Number(asset.divAnual || 0);
             const cotasPorMes = Number(asset.cotasPorMes || 0);
             const cotasPorAno = Number(asset.cotasPorAno || 0);
-            const cotasRestantes = Number(asset.cotasParaBolaDeNeve > 0
-                ? Math.max(0, Math.ceil(asset.cotasParaBolaDeNeve - asset.quantity))
-                : 0);
+            const cotasRestantes = Number(asset.cotasParaBolaDeNeve || 0);
 
             const actionButtons = user.isGuest
                 ? `<span class="badge bg-secondary">Dados de Exemplo</span>`

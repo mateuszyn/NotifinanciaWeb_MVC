@@ -110,20 +110,24 @@ def get_market_data(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
                     raise ValueError("yield empty")
 
                 yieldpct = float(raw_yield)
-                if yieldpct > 1:
-                    yieldpct = yieldpct
-                elif yieldpct > 0:
+                if 0 < yieldpct < 1:
                     yieldpct = yieldpct * 100
                 yieldpct = round(yieldpct, 2)
-            except Exception:
+            except Exception as exc:
+                print(f"[marketService] Falha ao obter yield via info para {query_symbol}: {exc}")
                 try:
                     dividends = getattr(tk, "dividends", None)
                     if dividends is None or dividends.empty:
                         raise ValueError("no dividends")
 
-                    recent_dividends = dividends.tail(12)
+                    if not isinstance(dividends, pd.Series):
+                        dividends = pd.Series(dividends)
+
+                    cutoff = pd.Timestamp.now().normalize() - pd.DateOffset(years=1)
+                    recent_dividends = dividends[dividends.index >= cutoff]
+
                     if recent_dividends.empty:
-                        raise ValueError("no recent dividends")
+                        raise ValueError("no recent dividends in last 12 months")
 
                     total_dividends = float(recent_dividends.sum())
                     current_price = price
@@ -135,7 +139,8 @@ def get_market_data(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
                         raise ValueError("no price")
 
                     yieldpct = round((total_dividends / current_price) * 100, 2)
-                except Exception:
+                except Exception as fallback_exc:
+                    print(f"[marketService] Fallback de dividendos falhou para {query_symbol}: {fallback_exc}")
                     yieldpct = 0.0
 
             results[original_symbol] = {

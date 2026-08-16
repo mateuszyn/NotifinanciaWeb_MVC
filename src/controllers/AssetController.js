@@ -65,10 +65,8 @@ export const AssetController = {
             const currentPrice = Number(live.price ?? live.regularMarketPrice ?? 0) || 0;
             const dailyChange = Number(live.changePercent ?? live.regularMarketChangePercent ?? 0) || 0;
             const yieldPct = Number(live.yieldpct ?? 0) || 0;
-            const divAnual = currentPrice * asset.quantity * (yieldPct / 100);
-            const divMensal = divAnual / 12;
 
-            asset.setMarketData(currentPrice, dailyChange, divMensal, divAnual, yieldPct);
+            asset.setMarketData(currentPrice, dailyChange, yieldPct);
         });
 
         this.renderLocalState();
