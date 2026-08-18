@@ -1,4 +1,5 @@
 import { Security } from '../services/security.js';
+import { BROKERS } from '../services/brokers.js';
 
 export const AssetView = {
     render(assets, user) {
@@ -10,13 +11,6 @@ export const AssetView = {
         const firstName = firstNameRaw.charAt(0).toUpperCase() + firstNameRaw.slice(1);
         const userName = Security.escapeHTML(firstName);
         
-        const BROKERS = {
-            'Nubank': { color: '#820AD1', textColor: '#FFFFFF', url: 'https://play.google.com/store/apps/details?id=com.nu.production' },
-            'Inter': { color: '#FF7A00', textColor: '#FFFFFF', url: 'https://play.google.com/store/apps/details?id=br.com.intermedium' },
-            'XP': { color: '#212529', textColor: '#FFFFFF', url: 'https://play.google.com/store/apps/details?id=br.com.xp.carteira' },
-            'Rico': { color: '#005AAA', textColor: '#FF8A00', url: 'https://play.google.com/store/apps/details?id=br.com.rico.mobile' }
-        };
-
         const currentBroker = user.preferred_broker || 'Nubank';
         const brokerInfo = BROKERS[currentBroker];
 
@@ -150,7 +144,7 @@ export const AssetView = {
                             ${dividendContent}
                         </div>
                         
-                        <a href="${brokerInfo.url}" target="_blank" class="btn w-100 d-flex align-items-center justify-content-center gap-2" 
+                        <a href="${brokerInfo.webUrl || brokerInfo.appUrl}" target="_blank" class="btn w-100 d-flex align-items-center justify-content-center gap-2" 
                            style="background-color: ${brokerInfo.color}; color: ${brokerInfo.textColor}; border: none; font-weight: bold; border-radius: 8px; height: 45px;">
                            <i class="bi bi-box-arrow-up-right"></i> Operar na ${currentBroker}
                         </a>
