@@ -1,4 +1,4 @@
-import './assets/style.css';
+import './styles/style.css';
 import { AuthService } from './services/authService.js';
 import { AssetController } from './controllers/assetController.js';
 import { AssetView } from './views/assetView.js';
