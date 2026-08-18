@@ -1,6 +1,6 @@
 import { assetRepository } from '../infrastructure/assetRepository.js';
-import { AssetView } from '../views/assetView.js';
-import { AddAssetView } from '../views/addAssetView.js';
+import { AssetView } from '../views/AssetView.js';
+import { AddAssetView } from '../views/AddAssetView.js';
 import { authRepository } from '../infrastructure/authRepository.js';
 import { supabase } from '../infrastructure/supabaseClient.js';
 import { TickerDictionary } from '../logic/tickerDictionary.js';
