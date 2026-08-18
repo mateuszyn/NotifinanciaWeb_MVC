@@ -4,10 +4,12 @@ import { AddAssetView } from '../views/addAssetView.js';
 import { AuthService } from '../services/authService.js';
 import { supabase } from '../services/supabaseClient.js';
 import { TickerDictionary } from '../utils/tickerDictionary.js';
+import { Profile } from '../models/profile.js';
 
 export const AssetController = {
     state: {
         assets: [],
+        profile: null,
         user: null,
         isEventsDelegated: false
     },
@@ -15,17 +17,19 @@ export const AssetController = {
     async init() {
         const user = await AuthService.getUser();
 
-        const { data: profile } = await supabase
+        const { data: prof } = await supabase
             .from('profiles')
-            .select('notifications_enabled, sort_by, preferred_broker') 
             .eq('id', user.id)
             .maybeSingle();
+        
+        const profile = Profile.fromJson(prof);
 
-        user.notifications_enabled = profile?.notifications_enabled || false;
-        user.sort_by = profile?.sort_by || 'pm_asc';
-        user.preferred_broker = profile?.preferred_broker || 'Nubank'; 
+        user.notifications_enabled = profile?.notificationsEnabled || false;
+        user.sort_by = profile?.sortBy || 'pm_asc';
+        user.preferred_broker = profile?.preferedBroker || 'Nubank'; 
 
         this.state.user = user;
+        this.state.profile = profile;
         this.renderLocalState();
 
         const userAssets = await AssetService.getAssets();
