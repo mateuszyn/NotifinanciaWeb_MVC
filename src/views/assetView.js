@@ -1,5 +1,5 @@
 import { Security } from '../services/security.js';
-import { BROKERS } from '../services/brokers.js';
+import { BROKERS } from '../utils/brokers.js';
 
 export const AssetView = {
     render(assets, user) {

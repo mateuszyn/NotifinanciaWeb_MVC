@@ -1,4 +1,4 @@
-import { TickerDictionary } from '../models/tickerDictionary.js';
+import { TickerDictionary } from '../utils/tickerDictionary.js';
 import { Security } from '../services/security.js';
 import { AssetService } from '../services/assetService.js';
 

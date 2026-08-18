@@ -3,7 +3,7 @@ import { AssetView } from '../views/assetView.js';
 import { AddAssetView } from '../views/addAssetView.js';
 import { AuthService } from '../services/authService.js';
 import { supabase } from '../services/supabaseClient.js';
-import { TickerDictionary } from '../models/tickerDictionary.js';
+import { TickerDictionary } from '../utils/tickerDictionary.js';
 
 export const AssetController = {
     state: {
