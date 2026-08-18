@@ -1,7 +1,7 @@
 import './assets/style.css';
 import { AuthService } from './services/authService.js';
-import { AssetController } from './controllers/AssetController.js';
-import { AssetView } from './views/AssetView.js';
+import { AssetController } from './controllers/assetController.js';
+import { AssetView } from './views/assetView.js';
 import { supabase } from './services/supabaseClient.js';
 
 supabase.auth.onAuthStateChange((event, session) => {

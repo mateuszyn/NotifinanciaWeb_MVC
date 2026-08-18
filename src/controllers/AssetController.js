@@ -1,9 +1,9 @@
 import { AssetService } from '../services/assetService.js';
-import { AssetView } from '../views/AssetView.js';
-import { AddAssetView } from '../views/AddAssetView.js';
+import { AssetView } from '../views/assetView.js';
+import { AddAssetView } from '../views/addAssetView.js';
 import { AuthService } from '../services/authService.js';
 import { supabase } from '../services/supabaseClient.js';
-import { TickerDictionary } from '../models/TickerDictionary.js';
+import { TickerDictionary } from '../models/tickerDictionary.js';
 
 export const AssetController = {
     state: {

@@ -1,4 +1,4 @@
-import { fetchMarketData } from '../models/apiService.js';
+import { fetchMarketData } from '../services/apiService.js';
 
 export const DashboardController = {
     async init() {

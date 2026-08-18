@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient.js';
-import { Asset } from '../models/Asset.js';
+import { Asset } from '../models/asset.js';
 
 export const AssetService = {
     // --- BLINDAGEM JWT ---
