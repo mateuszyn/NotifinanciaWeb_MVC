@@ -1,7 +1,7 @@
 import './styles/style.css';
 import { authRepository } from './infrastructure/authRepository.js';
-import { AssetController } from './controllers/AssetController.js';
-import { AssetView } from './views/AssetView.js';
+import { AssetController } from './controllers/assetController.js';
+import { AssetView } from './views/assetView.js';
 import { supabase } from './infrastructure/supabaseClient.js';
 
 // O "Vigia": Escuta as mudanças de estado de autenticação em tempo real
