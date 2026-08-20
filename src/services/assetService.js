@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient.js';
+import { supabase } from '../infrastructure/supabaseClient.js';
 import { Asset } from '../models/asset.js';
 
 export const AssetService = {

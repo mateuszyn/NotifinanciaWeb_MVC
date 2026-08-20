@@ -1,5 +1,5 @@
 import { TickerDictionary } from '../utils/tickerDictionary.js';
-import { Security } from '../services/security.js';
+import { Security } from '../infrastructure/security.js';
 import { AssetService } from '../services/assetService.js';
 
 export const AddAssetView = {

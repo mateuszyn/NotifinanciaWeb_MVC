@@ -1,4 +1,4 @@
-import { Security } from '../services/security.js';
+import { Security } from '../infrastructure/security.js';
 import { BROKERS } from '../utils/brokers.js';
 
 export const AssetView = {

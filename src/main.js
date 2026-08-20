@@ -2,7 +2,7 @@ import './styles/style.css';
 import { AuthService } from './services/authService.js';
 import { AssetController } from './controllers/assetController.js';
 import { AssetView } from './views/assetView.js';
-import { supabase } from './services/supabaseClient.js';
+import { supabase } from './infrastructure/supabaseClient.js';
 
 supabase.auth.onAuthStateChange((event, session) => {
     const user = session?.user;

@@ -1,4 +1,4 @@
-import { fetchMarketData } from '../services/apiService.js';
+import { AssetService } from '../services/assetService.js';
 
 export const DashboardController = {
     async init() {
@@ -23,7 +23,20 @@ export const DashboardController = {
         `;
 
         try {
-            const data = await fetchMarketData();
+            // 1. Busca os ativos salvos do usuário
+            const userAssets = await AssetService.getAssets();
+            
+            if (!userAssets || userAssets.length === 0) {
+                this.render({}); // Renderiza vazio se não houver ativos
+                return;
+            }
+
+            // 2. Extrai apenas a lista de tickers
+            const tickers = userAssets.map(asset => asset.ticker);
+
+            // 3. Busca os preços em lote na API
+            const data = await AssetService.getMarketPrices(tickers);
+            
             this.render(data.results || {});
         } catch (error) {
             app.innerHTML = `
