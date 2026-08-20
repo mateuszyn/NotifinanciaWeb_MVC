@@ -19,6 +19,7 @@ export const AssetController = {
 
         const { data: prof } = await supabase
             .from('profiles')
+            .select('*')
             .eq('id', user.id)
             .maybeSingle();
         

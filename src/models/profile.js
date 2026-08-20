@@ -1,11 +1,11 @@
 export class Profile {
-    constructor(id, email, notificationsEnabled, updatedAt, sortBy, preferedBroker) {
+    constructor(id, email, notificationsEnabled, updatedAt, sortBy, preferredBroker) {
         this.id = id;
         this.email = email;
         this.notificationsEnabled = notificationsEnabled;
         this.updatedAt = updatedAt;
         this.sortBy = sortBy;
-        this.preferedBroker = preferedBroker;
+        this.preferredBroker = preferredBroker;
     }
 
     static fromJson(json) {
@@ -15,7 +15,7 @@ export class Profile {
             json.notifications_enabled,
             json.updated_at,
             json.sort_by,
-            json.prefered_broker
+            json.preferred_broker
         );
     }
 }
