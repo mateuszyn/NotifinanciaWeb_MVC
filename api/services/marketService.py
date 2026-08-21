@@ -86,13 +86,28 @@ def get_market_data(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
 
             meta = result.get("meta") or {}
             price_value = meta.get("regularMarketPrice")
-            previous_close = meta.get("chartPreviousClose")
-
             if price_value is not None:
                 price = float(price_value)
 
-            if price is not None and previous_close not in (None, 0):
-                change_percent = round(((price - float(previous_close)) / float(previous_close)) * 100, 2)
+            # EXTRAÇÃO DIRETA DO HISTÓRICO (Garante o cálculo real de ontem vs hoje)
+            indicators = result.get("indicators") or {}
+            quote_list = indicators.get("quote") or [{}]
+            closes = quote_list[0].get("close") or []
+            
+            # Remove valores nulos do final da lista se houver
+            valid_closes = [c for c in closes if c is not None]
+
+            if price is not None and len(valid_closes) >= 2:
+                # O penúltimo fechamento é o "ontem", e o último é o preço atual/hoje
+                previous_close = float(valid_closes[-2])
+                if previous_close > 0:
+                    change_percent = round(((price - previous_close) / previous_close) * 100, 2)
+                    
+                    # Guarda-costas contra bugs do Yahoo (variações irreais acima de 50%)
+                    if abs(change_percent) > 50:
+                        change_percent = 0.0
+            else:
+                change_percent = 0.0
 
             events = result.get("events") or {}
             dividends = events.get("dividends") or {}

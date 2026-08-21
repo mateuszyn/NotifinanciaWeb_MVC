@@ -37,46 +37,28 @@ export const AssetController = {
 
         if (userAssets.length > 0) {
             const allTickers = userAssets.map(asset => `${asset.ticker.replace(/\.SA$/i, '')}.SA`);
-            let apiResults = {};
+            
+            const data = await AssetService.getMarketPrices(allTickers);
+            const apiResults = data.results || [];
 
-            try {
-                const response = await fetch(`/api/market-data?tickers=${allTickers.join(',')}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    apiResults = data.results || {};
+            userAssets.forEach(asset => {
+                const normalizedTicker = asset.ticker.replace(/\.SA$/i, '').toUpperCase();
+                
+                // TRADUTOR: Busca na Lista (Array) ou no Dicionário (Objeto)
+                let marketData = {};
+                if (Array.isArray(apiResults)) {
+                    marketData = apiResults.find(item => 
+                        item.symbol === normalizedTicker || 
+                        item.symbol === `${normalizedTicker}.SA`
+                    ) || {};
+                } else {
+                    marketData = apiResults[normalizedTicker] || apiResults[`${normalizedTicker}.SA`] || {};
                 }
-            } catch (error) {
-                console.error('Erro ao buscar dados da API de mercado:', error);
-            }
-
-            const enrichedAssets = userAssets.map(asset => {
-                const normalizedTicker = asset.ticker.replace(/\.SA$/i, '').replace(/\.sa$/i, '').toUpperCase();
-                const apiAsset = apiResults[normalizedTicker] || apiResults[`${normalizedTicker}.SA`] || {};
-                const hasApiData = Boolean(apiAsset && Object.keys(apiAsset).length > 0);
-                const hasMeaningfulValues = hasApiData && (Number(apiAsset.price) > 0 || Number(apiAsset.changePercent) !== 0 || Number(apiAsset.yieldpct) > 0);
-                const currentPrice = apiAsset.price ?? asset.averagePrice ?? 0;
-                const dailyChange = apiAsset.changePercent ?? 0;
-                const yieldpct = apiAsset.yieldpct ?? 0;
-                const divAnual = currentPrice * (yieldpct / 100) * asset.quantity;
-                const divMensal = divAnual / 12;
-                const variacaoPM = asset.averagePrice > 0 
-                    ? ((currentPrice / asset.averagePrice) - 1) * 100 
-                    : 0;
-
-                return {
-                    ...asset,
-                    currentPrice,
-                    dailyChange,
-                    variacaoPM,
-                    totalValue: currentPrice * asset.quantity,
-                    yieldpct,
-                    divAnual,
-                    divMensal,
-                    dataError: !hasMeaningfulValues
-                };
+                
+                asset.enrich(marketData);
             });
 
-            this.state.assets = enrichedAssets;
+            this.state.assets = userAssets;
         } else {
             this.state.assets = [];
         }
@@ -102,8 +84,9 @@ export const AssetController = {
             case 'name_desc': return sorted.sort((a, b) => b.ticker.localeCompare(a.ticker));
             case 'day_desc': return sorted.sort((a, b) => (b.dailyChange || 0) - (a.dailyChange || 0));
             case 'day_asc': return sorted.sort((a, b) => (a.dailyChange || 0) - (b.dailyChange || 0));
-            case 'pm_asc': return sorted.sort((a, b) => (a.variacaoPM || 0) - (b.variacaoPM || 0));
-            case 'pm_desc': return sorted.sort((a, b) => (b.variacaoPM || 0) - (a.variacaoPM || 0));
+            // Usando os novos nomes corretos do Model: variacaoPm
+            case 'pm_asc': return sorted.sort((a, b) => (a.variacaoPm || 0) - (b.variacaoPm || 0));
+            case 'pm_desc': return sorted.sort((a, b) => (b.variacaoPm || 0) - (a.variacaoPm || 0));
             case 'total_desc': return sorted.sort((a, b) => (b.totalValue || 0) - (a.totalValue || 0));
             case 'total_asc': return sorted.sort((a, b) => (a.totalValue || 0) - (b.totalValue || 0));
             case 'qty_desc': return sorted.sort((a, b) => b.quantity - a.quantity);
@@ -422,48 +405,27 @@ export const AssetController = {
 
                 try {
                     const data = await AssetService.getMarketPrices([ticker]);
-                    const result = data.results?.[0] || data.results?.[ticker.toUpperCase()] || data.results?.[`${ticker.toUpperCase()}.SA`] || null;
+                    const apiResults = data.results || [];
 
-                    if (result && (Number(result.price) > 0 || Number(result.changePercent) !== 0 || Number(result.yieldpct) > 0)) {
-                        const asset = this.state.assets[assetIndex];
-                        const normalizedTicker = ticker.replace(/\.SA$/i, '').replace(/\.sa$/i, '').toUpperCase();
-                        const currentPrice = result.price ?? asset.averagePrice ?? 0;
-                        const dailyChange = result.changePercent ?? 0;
-                        const yieldpct = result.yieldpct ?? 0;
-                        const divAnual = currentPrice * (yieldpct / 100) * asset.quantity;
-                        const divMensal = divAnual / 12;
-                        const variacaoPM = asset.averagePrice > 0 
-                            ? ((currentPrice / asset.averagePrice) - 1) * 100 
-                            : 0;
-
-                        this.state.assets[assetIndex] = {
-                            ...asset,
-                            currentPrice,
-                            dailyChange,
-                            variacaoPM,
-                            totalValue: currentPrice * asset.quantity,
-                            yieldpct,
-                            divAnual,
-                            divMensal,
-                            dataError: false
-                        };
+                    // TRADUTOR: Busca na Lista (Array) ou no Dicionário (Objeto)
+                    let marketData = {};
+                    if (Array.isArray(apiResults)) {
+                        marketData = apiResults.find(item => 
+                            item.symbol.toUpperCase() === ticker.toUpperCase() || 
+                            item.symbol.toUpperCase() === `${ticker.toUpperCase()}.SA`
+                        ) || {};
                     } else {
-                        this.state.assets[assetIndex] = {
-                            ...this.state.assets[assetIndex],
-                            dataError: true
-                        };
+                        marketData = apiResults[ticker.toUpperCase()] || apiResults[`${ticker.toUpperCase()}.SA`] || {};
                     }
 
+                    // A MÁGICA: Em vez de espalhar e destruir a classe, pedimos para ela se enriquecer novamente!
+                    this.state.assets[assetIndex].enrich(marketData);
                     this.renderLocalState();
                 } catch (error) {
                     console.error('Erro ao recarregar ativo individual:', error);
-                    this.state.assets[assetIndex] = {
-                        ...this.state.assets[assetIndex],
-                        dataError: true
-                    };
+                    this.state.assets[assetIndex].dataError = true;
                     this.renderLocalState();
                 }
-
                 return;
             }
 
@@ -568,7 +530,6 @@ export const AssetController = {
                 const ticker = editButton?.dataset.ticker || '';
                 const loadingIcon = ticker ? document.getElementById(`loading-${ticker}`) : null;
 
-                // --- MAGIA ACONTECENDO AQUI ---
                 // Mostra o ícone girando removendo a classe d-none que o Bootstrap força
                 if (loadingIcon) {
                     loadingIcon.classList.remove('d-none');
@@ -587,24 +548,23 @@ export const AssetController = {
 
                     const asset = this.state.assets.find(a => Number(a.id) === Number(id));
                     if (asset) {
+                        // 1. Atualiza as quantidades básicas
                         asset.quantity = data.quantity;
                         asset.averagePrice = data.averagePrice;
-                        const currentPrice = Number(asset.currentPrice) || Number(asset.averagePrice) || 0;
-                        const yieldpct = Number(asset.yieldpct) || 0;
-                        const divAnual = currentPrice * (yieldpct / 100) * asset.quantity;
-                        const divMensal = divAnual / 12;
-
-                        asset.variacaoPM = asset.averagePrice > 0 ? ((currentPrice / asset.averagePrice) - 1) * 100 : 0;
-                        asset.totalValue = currentPrice * asset.quantity;
-                        asset.divAnual = divAnual;
-                        asset.divMensal = divMensal;
+                        
+                        // 2. A MÁGICA DA ARQUITETURA LIMPA:
+                        // Pede para o próprio Model (a classe Asset) se recalcular
+                        // passando os dados de mercado que ele já possui na memória!
+                        asset.enrich({
+                            price: asset.currentPrice,
+                            changePercent: asset.dailyChange,
+                            yieldPct: asset.yieldPct
+                        });
                     }
 
-                    // Ao chamar o renderLocalState(), ele refaz o HTML do zero.
-                    // Ou seja: a roldana some e os botões originais voltam automaticamente!
+                    // Refaz o HTML. O ícone de loading some e os dados novos aparecem.
                     this.renderLocalState();
                     
-                    // Um aviso sutil de sucesso no canto, para não travar a tela
                     Swal.fire({
                         toast: true,
                         position: 'top-end',

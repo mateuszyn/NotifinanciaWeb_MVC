@@ -68,7 +68,7 @@ export const AddAssetView = {
         const span = document.createElement('span');
         span.className = 'snowball-add-info';
         span.style.cssText = 'color: #8fe3a7; font-size: 0.85em; margin-left: 5px;';
-        span.textContent = `(Faltam ${cotasParaBolaDeNeve} para a bola de neve)`;
+        span.textContent = `(Compre ${cotasParaBolaDeNeve} para a bola de neve)`;
         quantityLabel.appendChild(span);
     },
 

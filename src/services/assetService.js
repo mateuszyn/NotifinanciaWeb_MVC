@@ -47,8 +47,9 @@ export const AssetService = {
     },
 
     // 2. UNIFICADO: Busca em LOTE (Batch) enviando o Token JWT
+   // 2. UNIFICADO: Busca em LOTE (Batch) apontando para a API em Python (Vercel)
     async getMarketPrices(tickers) {
-        if (!tickers || (Array.isArray(tickers) && tickers.length === 0)) return { results: [] };
+        if (!tickers || (Array.isArray(tickers) && tickers.length === 0)) return { results: {} };
         
         try {
             let tickerString = '';
@@ -63,48 +64,55 @@ export const AssetService = {
 
             const cleanTicker = tickerString.toUpperCase().replace(/\s/g, '');
 
-            const headers = await this._getAuthHeaders();
-            
-            const { data, error } = await supabase.functions.invoke('market-data', {
-                body: { tickers: cleanTicker },
-                headers: headers
-            });
+            // BINGO: Chamando a sua API Python nativa da Vercel em vez da Edge Function!
+            const response = await fetch(`/api/market-data?tickers=${cleanTicker}`);
 
-            if (error || !data || !data.results) {
-                console.warn(`Aviso: Falha ao buscar dados em lote para: ${cleanTicker}`);
-                return { results: [] }; 
+            if (!response.ok) {
+                console.warn(`Aviso: Falha ao buscar dados em lote na API Python para: ${cleanTicker}`);
+                return { results: {} }; 
             }
 
-            return data;
+            const data = await response.json();
+            return data; // Retorna o JSON certinho que o Python já cospe
         } catch (error) {
-            console.error('Erro na chamada da Edge Function:', error);
-            return { results: [] };
+            console.error('Erro na chamada da API Python:', error);
+            return { results: {} };
         }
     },
 
-    // 3. Valida ticker usando a Edge Function
+    // 3. Valida ticker usando a lógica de tradução já consertada
     async validateTicker(ticker) {
         if (!ticker) return false;
         try {
-            const data = await this.getMarketPrices(ticker);
-            return data.results && data.results.length > 0 && data.results[0].symbol;
+            // Reaproveitamos o getPrice, pois ele já sabe ler a API em Python perfeitamente
+            const data = await this.getPrice(ticker);
+            return data && data.price > 0;
         } catch (error) {
             return false;
         }
     },
 
-    // 4. getPrice usa a lógica segura em lote
+    // 4. getPrice usa a lógica segura da API Python com tradutor e sufixo .SA
     async getPrice(ticker) {
         try {
-            const data = await this.getMarketPrices(ticker);
-            const res = data.results?.[0];
+            // Garante que a busca no backend vai com o .SA (exigência do Yahoo Finance para a B3)
+            const searchTicker = ticker.toUpperCase().includes('.SA') ? ticker.toUpperCase() : `${ticker.toUpperCase()}.SA`;
+            const data = await this.getMarketPrices(searchTicker);
+            
+            // Procura a resposta tanto com o .SA quanto sem ele
+            const normalizedTicker = searchTicker;
+            const rawTicker = ticker.toUpperCase().replace(/\.SA$/, '');
+            
+            const res = data.results?.[normalizedTicker] || data.results?.[rawTicker];
+            
             return {
-                price: Number(res?.regularMarketPrice || 0),
-                changePercent: Number(res?.regularMarketChangePercent || 0),
-                yieldPct: Number(res?.dividendYield ?? res?.yield ?? 0)
+                // O Tradutor: Lê o formato velho e o formato puro da Edge/Python
+                price: Number(res?.price || res?.regularMarketPrice || 0),
+                changePercent: Number(res?.changePercent || res?.regularMarketChangePercent || 0),
+                yieldPct: Number(res?.yieldpct || res?.yieldPct || res?.dividendYield || res?.yield || 0)
             };
         } catch (error) {
-            return { price: 0, changePercent: 0 };
+            return { price: 0, changePercent: 0, yieldPct: 0 };
         }
     },
 

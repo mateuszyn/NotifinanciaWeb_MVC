@@ -21,7 +21,7 @@ export const AssetView = {
             : "Ative o sininho para receber relatório diário da carteira";
 
         const cardsHtml = assets.length > 0 ? assets.map(asset => {
-            const profitPct = asset.variacaoPM || 0;
+            const profitPct = asset.variacaoPm || 0;
             const dailyChange = asset.dailyChange || 0;
             const profitTextClass = profitPct >= 0 ? 'text-profit-pos' : 'text-profit-neg';
             const dailyTextClass = dailyChange >= 0 ? 'text-profit-pos' : 'text-profit-neg';
@@ -32,7 +32,7 @@ export const AssetView = {
 
             const safeTicker = Security.escapeHTML(asset.ticker);
             
-            const yieldPct = asset.yieldpct || 0;
+            const yieldPct = asset.yieldPct || 0;
             const divMensal = asset.divMensal || 0;
             const divAnual = asset.divAnual || 0;
             const currentPrice = Number(asset.currentPrice) || 0;
