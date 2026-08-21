@@ -84,7 +84,7 @@ export const AssetService = {
     async validateTicker(ticker) {
         if (!ticker) return false;
         try {
-            // Reaproveitamos o getPrice, pois ele já sabe ler a API em Python perfeitamente
+            // Reaproveitamos o getPrice que já sabe ler a API em Python e o .SA perfeitamente!
             const data = await this.getPrice(ticker);
             return data && data.price > 0;
         } catch (error) {
