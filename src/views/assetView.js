@@ -42,7 +42,6 @@ export const AssetView = {
             const cotasFaltantes = Math.max(0, cotasParaBolaDeNeve - quantity);
             const cotasCompradasPorMes = divMensal > 0 && currentPrice > 0 ? Number((divMensal / currentPrice).toFixed(1)) : 0;
             const cotasCompradasPorAno = divAnual > 0 && currentPrice > 0 ? Number((divAnual / currentPrice).toFixed(1)) : 0;
-            const showZeroVariationWarning = dailyChange === 0 && profitPct === 0;
 
             let snowballMessage = `Faltam ${cotasFaltantes} cotas para a Bola de Neve (${cotasParaBolaDeNeve} cotas)`;
             let snowballColor = '#ff8a8a';
@@ -133,7 +132,7 @@ export const AssetView = {
                             </div>
                             <div class="col-6 ps-3">
                                 <p class="price-label">Preço Atual</p>
-                                <p class="price-value d-flex align-items-center gap-1">R$ ${asset.currentPrice.toFixed(2)} <span class="${dailyTextClass} small">(${dailyChange >= 0 ? '+' : ''}${dailyChange.toFixed(2)}%)</span>${showZeroVariationWarning ? '<i class="bi bi-exclamation-triangle text-warning" title="Sem variação capturada. Recarregue se necessário."></i>' : ''}</p>
+                                <p class="price-value d-flex align-items-center gap-1">R$ ${asset.currentPrice.toFixed(2)} <span class="${dailyTextClass} small">(${dailyChange >= 0 ? '+' : ''}${dailyChange.toFixed(2)}%)</span></p>
                             </div>
                         </div>
                         
