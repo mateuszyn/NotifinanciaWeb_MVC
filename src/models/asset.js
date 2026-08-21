@@ -15,31 +15,53 @@ export class Asset {
         this.dataError = false;
     }
 
-    // O Model enriquece a si mesmo com os dados do mercado
+    // Aplica o cache instantâneo enquanto a API não responde
+    applyCache(cachedPrice, cachedChange, cachedYield) {
+        const price = Number(cachedPrice) || 0;
+        
+        if (price > 0) {
+            this.currentPrice = price;
+            this.dailyChange = Number(cachedChange) || 0;
+            this.yieldPct = Number(cachedYield) || 0;
+            
+            this.divAnual = this.currentPrice * (this.yieldPct / 100) * this.quantity;
+            this.divMensal = this.divAnual / 12;
+            
+            this.variacaoPm = this.averagePrice > 0 
+                ? ((this.currentPrice / this.averagePrice) - 1) * 100 
+                : 0;
+                
+            this.totalValue = this.currentPrice * this.quantity;
+            this.dataError = false;
+        }
+    }
+
     // O Model enriquece a si mesmo com os dados do mercado
     enrich(marketData) {
-        if (!marketData || Object.keys(marketData).length === 0) {
-            this.dataError = true;
-            this.currentPrice = this.averagePrice;
-            this.totalValue = this.currentPrice * this.quantity;
-            return;
-        }
+        // Verifica se a API não mandou dados (Yahoo falhou ou Vercel dormiu)
+        const isMarketDataEmpty = !marketData || Object.keys(marketData).length === 0;
+        const fetchedPrice = isMarketDataEmpty ? 0 : (Number(marketData.price || marketData.regularMarketPrice) || 0);
 
-        const fetchedPrice = Number(marketData.price || marketData.regularMarketPrice) || 0;
-        
-        // REGRA DE BLINDAGEM: Se temos o preço real, atualizamos. 
-        // Se não (plano B ativado), usamos o PM e ZERAMOS a variação para não mostrar "Frankensteins".
         if (fetchedPrice > 0) {
+            // SUCESSO: Atualiza com os dados super frescos do mercado
             this.currentPrice = fetchedPrice;
             this.dailyChange = Number(marketData.changePercent || marketData.regularMarketChangePercent) || 0;
+            this.yieldPct = Number(marketData.yieldPct || marketData.yieldpct || marketData.dividendYield || marketData.yield) || 0;
+            this.dataError = false;
         } else {
-            this.currentPrice = this.averagePrice;
-            this.dailyChange = 0; 
+            // FALHA: A API não trouxe preço. Ativamos o Modo de Segurança!
+            this.dataError = true;
+            
+            // Se a classe AINDA NÃO TEM preço (o cache do banco estava vazio), usamos o P.M.
+            if (!this.currentPrice || this.currentPrice === 0) {
+                this.currentPrice = this.averagePrice;
+                this.dailyChange = 0;
+            }
+            // MÁGICA: Se ela já tinha preço (puxou do SWR Cache), NÃO FAZEMOS NADA! 
+            // Ela vai manter o último preço e variação reais que estavam salvos no banco.
         }
-        
-        // Caça o Yield em qualquer formato que a API mandar
-        this.yieldPct = Number(marketData.yieldPct || marketData.yieldpct || marketData.dividendYield || marketData.yield) || 0;
-        
+
+        // Refaz a matemática com o preço que sobreviveu (Fresco, Cache ou P.M.)
         this.divAnual = this.currentPrice * (this.yieldPct / 100) * this.quantity;
         this.divMensal = this.divAnual / 12;
         
@@ -48,9 +70,6 @@ export class Asset {
             : 0;
             
         this.totalValue = this.currentPrice * this.quantity;
-        
-        const hasMeaningfulValues = fetchedPrice > 0 || this.dailyChange !== 0 || this.yieldPct > 0;
-        this.dataError = !hasMeaningfulValues;
     }
 
     getProfit() {

@@ -20,11 +20,32 @@ export const AssetService = {
     async getAssets() {
         const { data, error } = await supabase.from('assets').select('*');
         if (error) return [];
+        
         return data.map(item => {
             const asset = new Asset(item.ticker, item.quantity, item.average_price);
             asset.id = item.id;
+            
+            // MÁGICA DO CACHE: Aplica os valores da última sessão instantaneamente
+            asset.applyCache(item.cached_price, item.cached_change, item.cached_yield);
+            
             return asset;
         });
+    },
+
+    // Salva o cache de todos os ativos no banco de dados de forma silenciosa
+    async saveCacheBackground(assets) {
+        try {
+            const promises = assets.map(asset => 
+                supabase.from('assets').update({
+                    cached_price: asset.currentPrice,
+                    cached_change: asset.dailyChange,
+                    cached_yield: asset.yieldPct
+                }).eq('id', asset.id)
+            );
+            await Promise.all(promises);
+        } catch (error) {
+            console.warn("Erro silencioso ao salvar cache no background:", error);
+        }
     },
 
     // 1. ATUALIZADO: Busca sugestões enviando o Token JWT

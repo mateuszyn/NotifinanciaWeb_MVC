@@ -15,7 +15,7 @@ export const AssetController = {
     },
 
     // ==========================================
-    // 1. INICIALIZAÇÃO E ESTADO
+    // 1. INICIALIZAÇÃO E ESTADO (SWR CACHE)
     // ==========================================
     async init() {
         const user = await AuthService.getUser();
@@ -34,38 +34,54 @@ export const AssetController = {
 
         this.state.user = user;
         this.state.profile = profile;
-        this.renderLocalState();
-
+        
+        // --- MÁGICA 1: Carrega instantaneamente com dados do Cache ---
+        // O getAssets já traz a classe Asset "viva" e com o applyCache() aplicado!
         const userAssets = await AssetService.getAssets();
-
-        if (userAssets.length > 0) {
-            const allTickers = userAssets.map(asset => `${asset.ticker.replace(/\.SA$/i, '')}.SA`);
-            const data = await AssetService.getMarketPrices(allTickers);
-            const apiResults = data.results || [];
-
-            userAssets.forEach(asset => {
-                const normalizedTicker = asset.ticker.replace(/\.SA$/i, '').toUpperCase();
-                let marketData = {};
-                if (Array.isArray(apiResults)) {
-                    marketData = apiResults.find(item => 
-                        item.symbol === normalizedTicker || item.symbol === `${normalizedTicker}.SA`
-                    ) || {};
-                } else {
-                    marketData = apiResults[normalizedTicker] || apiResults[`${normalizedTicker}.SA`] || {};
-                }
-                asset.enrich(marketData);
-            });
-
-            this.state.assets = userAssets;
-        } else {
-            this.state.assets = [];
-        }
-
-        this.renderLocalState();
+        this.state.assets = userAssets || [];
+        
+        // Renderiza a tela em ZERO segundos usando a memória do banco de dados
+        this.renderLocalState(); 
 
         if (!this.state.isEventsDelegated) {
             this.setupDelegatedEvents();
             this.state.isEventsDelegated = true;
+        }
+
+        // --- MÁGICA 2: Busca os dados reais no background e atualiza a tela (SWR) ---
+        if (this.state.assets.length > 0) {
+            const allTickers = this.state.assets.map(asset => `${asset.ticker.replace(/\.SA$/i, '')}.SA`);
+            
+            try {
+                // A requisição para a API Python acontece de forma fantasma
+                const data = await AssetService.getMarketPrices(allTickers);
+                const apiResults = data.results || [];
+
+                this.state.assets.forEach(asset => {
+                    const normalizedTicker = asset.ticker.replace(/\.SA$/i, '').toUpperCase();
+                    let marketData = {};
+                    if (Array.isArray(apiResults)) {
+                        marketData = apiResults.find(item => 
+                            item.symbol === normalizedTicker || item.symbol === `${normalizedTicker}.SA`
+                        ) || {};
+                    } else {
+                        marketData = apiResults[normalizedTicker] || apiResults[`${normalizedTicker}.SA`] || {};
+                    }
+                    // Atualiza a classe com os dados reais e calcula a variação real do momento
+                    asset.enrich(marketData);
+                });
+
+                // Tela dá uma leve "piscada" substituindo o cache pelos dados atualizados agora
+                this.renderLocalState();
+
+                // --- MÁGICA 3: Salva o novo cache silenciosamente no banco ---
+                // Para que o carregamento rápido de amanhã já esteja preparado!
+                AssetService.saveCacheBackground(this.state.assets);
+
+            } catch (error) {
+                console.error("SWR: Falha silenciosa ao revalidar preços no background.", error);
+                // Como é SWR, se a API falhar, o usuário continua vendo os dados do Cache sem nenhum erro na tela!
+            }
         }
     },
 
