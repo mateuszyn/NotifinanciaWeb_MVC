@@ -11,7 +11,8 @@ export const AssetController = {
         assets: [],
         profile: null,
         user: null,
-        isEventsDelegated: false
+        isEventsDelegated: false,
+        validatedTickers: new Set() // MEMÓRIA: Guarda ativos já validados no form
     },
 
     // ==========================================
@@ -35,12 +36,9 @@ export const AssetController = {
         this.state.user = user;
         this.state.profile = profile;
         
-        // --- MÁGICA 1: Carrega instantaneamente com dados do Cache ---
-        // O getAssets já traz a classe Asset "viva" e com o applyCache() aplicado!
         const userAssets = await AssetService.getAssets();
         this.state.assets = userAssets || [];
         
-        // Renderiza a tela em ZERO segundos usando a memória do banco de dados
         this.renderLocalState(); 
 
         if (!this.state.isEventsDelegated) {
@@ -48,12 +46,10 @@ export const AssetController = {
             this.state.isEventsDelegated = true;
         }
 
-        // --- MÁGICA 2: Busca os dados reais no background e atualiza a tela (SWR) ---
         if (this.state.assets.length > 0) {
             const allTickers = this.state.assets.map(asset => `${asset.ticker.replace(/\.SA$/i, '')}.SA`);
             
             try {
-                // A requisição para a API Python acontece de forma fantasma
                 const data = await AssetService.getMarketPrices(allTickers);
                 const apiResults = data.results || [];
 
@@ -67,20 +63,13 @@ export const AssetController = {
                     } else {
                         marketData = apiResults[normalizedTicker] || apiResults[`${normalizedTicker}.SA`] || {};
                     }
-                    // Atualiza a classe com os dados reais e calcula a variação real do momento
                     asset.enrich(marketData);
                 });
 
-                // Tela dá uma leve "piscada" substituindo o cache pelos dados atualizados agora
                 this.renderLocalState();
-
-                // --- MÁGICA 3: Salva o novo cache silenciosamente no banco ---
-                // Para que o carregamento rápido de amanhã já esteja preparado!
                 AssetService.saveCacheBackground(this.state.assets);
-
             } catch (error) {
                 console.error("SWR: Falha silenciosa ao revalidar preços no background.", error);
-                // Como é SWR, se a API falhar, o usuário continua vendo os dados do Cache sem nenhum erro na tela!
             }
         }
     },
@@ -115,7 +104,6 @@ export const AssetController = {
         const appContainer = document.querySelector('#app');
         if (!appContainer) return;
 
-        // Ouve tudo e manda para os sub-controladores
         appContainer.addEventListener('click', (e) => this.handleClicks(e));
         appContainer.addEventListener('change', (e) => this.handleChanges(e));
         appContainer.addEventListener('submit', (e) => this.handleSubmits(e));
@@ -155,7 +143,6 @@ export const AssetController = {
     // 4. LÓGICA DE NEGÓCIO (AÇÕES)
     // ==========================================
     
-    // --- LÓGICA DE CLICK ---
     async onRetryPriceForm(e) {
         const tickerInput = document.querySelector('#asset-ticker');
         const priceInput = document.querySelector('#averagePrice');
@@ -171,6 +158,10 @@ export const AssetController = {
                 const data = await AssetService.getPrice(ticker);
                 if (data && data.price > 0) {
                     priceInput.value = data.price.toFixed(2);
+                    
+                    // FAST-PATH: Memoriza que o ativo é válido na API!
+                    this.state.validatedTickers.add(ticker);
+
                     const yieldAnual = Number(data.yieldPct || 0);
                     if (yieldAnual > 0) {
                         const rendaMensalPorCota = (data.price * (yieldAnual / 100)) / 12;
@@ -288,7 +279,7 @@ export const AssetController = {
         }
 
         Swal.fire(alertConfig).then(async (result) => {
-            if ((isFII && temLucro) || (isFII && temPrejuizo)) return; // Já tratado no preConfirm
+            if ((isFII && temLucro) || (isFII && temPrejuizo)) return; 
             if (result.isConfirmed) {
                 this.showLoading('Excluindo ativo...');
                 await this.executeDelete(idDoAtivo);
@@ -371,7 +362,6 @@ export const AssetController = {
         window.location.reload();
     },
 
-    // --- LÓGICA DE MUDANÇA (CHANGE) ---
     async onChangeSort(select) {
         const newSort = select.value;
         select.disabled = true;
@@ -392,7 +382,6 @@ export const AssetController = {
         } catch (err) { console.error(err); }
     },
 
-    // --- LÓGICA DE SUBMISSÃO (SUBMIT) ---
     async onUpdateSubmit(e, form) {
         e.preventDefault();
         const id = document.querySelector('#update-id').value;
@@ -440,16 +429,25 @@ export const AssetController = {
         const qtyValue = qtyInput ? qtyInput.value : '';
         const priceValue = priceInput ? priceInput.value : '';
 
+        // Validações RÁPIDAS (Antes de travar a tela com Spinner)
         if (!tickerValue || !qtyValue || !priceValue) return this.showError('Preencha o Ticker, a Quantidade e o Preço Médio.');
+        if (this.state.assets.some(asset => asset.ticker === tickerValue)) return this.showError(`O ativo ${tickerValue} já está cadastrado.`);
 
         this.showLoading('Buscando e validando ativo...');
 
         try {
-            if (this.state.assets.some(asset => asset.ticker === tickerValue)) return this.showError(`O ativo ${tickerValue} já está cadastrado.`);
-            const isValid = await AssetService.validateTicker(tickerValue);
+            // FAST-PATH: Se já validamos o ticker no focusOut, pula a requisição dupla na B3!
+            let isValid = this.state.validatedTickers.has(tickerValue);
+            
+            if (!isValid) {
+                isValid = await AssetService.validateTicker(tickerValue);
+                if (isValid) this.state.validatedTickers.add(tickerValue);
+            }
+
             if (!isValid) return this.showError(`O ticker "${tickerValue}" não foi encontrado na B3.`);
 
-            Swal.fire({ title: 'Salvando na carteira...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            // Muda apenas o texto, não refaz o spinner do zero para evitar bugs visuais
+            Swal.update({ title: 'Salvando na carteira...' });
 
             await AssetService.addAsset({ ticker: tickerValue, quantity: Number(qtyValue), averagePrice: parseFloat(priceValue) });
 
@@ -485,7 +483,11 @@ export const AssetController = {
                 const data = await AssetService.getPrice(ticker);
                 if (data && data.price > 0 && !priceInput.value) {
                     priceInput.value = data.price.toFixed(2);
+                    
+                    // FAST-PATH: Memoriza o ativo validado para acelerar o salvamento depois
+                    this.state.validatedTickers.add(ticker);
                 }
+                
                 if (data && data.price > 0) {
                     const yieldAnual = Number(data.yieldPct || 0);
                     if (yieldAnual > 0) {
@@ -509,7 +511,14 @@ export const AssetController = {
     // ==========================================
     // 5. HELPERS DE INTERFACE
     // ==========================================
-    showLoading(message) { Swal.fire({ title: message, allowOutsideClick: false, didOpen: () => Swal.showLoading() }); },
-    showSuccess(message) { Swal.fire({ icon: 'success', title: 'Sucesso!', text: message, timer: 2000, showConfirmButton: false }); },
-    showError(message) { Swal.fire({ icon: 'error', title: 'Oops...', text: message }); }
+    showLoading(message) { 
+        Swal.fire({ title: message, allowOutsideClick: false, didOpen: () => Swal.showLoading() }); 
+    },
+    showSuccess(message) { 
+        Swal.fire({ icon: 'success', title: 'Sucesso!', text: message, timer: 2000, showConfirmButton: false }); 
+    },
+    showError(message) { 
+        Swal.hideLoading(); // Desliga o spinner fantasma
+        Swal.fire({ icon: 'error', title: 'Oops...', text: message }); 
+    }
 };

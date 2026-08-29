@@ -93,5 +93,24 @@ O Vercel CLI irá subir o servidor de desenvolvimento, conectar a API Python e d
 
 [x] Injeção de Prompts para análises via IA.
 
+## 🗺️ Roadmap de Evolução e Monetização do Notifinancia
 
+### 🚀 Fase 1: Fundação, Legislação e Monetização Inicial
+* [x] **Aviso de Venda de FIIs:** Alerta de DARF e tutorial inseridos diretamente na exclusão de ativos com lucro.
+* [x] **Rodapé Profissional & Proteção Jurídica:** Views de Termos, Privacidade, Contato e Disclaimer configuradas de forma responsiva via *Hash Routing*.
+* [ ] **Monetização:** Injeção do bloco de Ads/parceiros para faturamento institucional.
+
+### ⚡ Fase 2: UX Fluida, Inteligência de Dados e Resumo
+* [x] **UX de Edição Dinâmica:** Skeleton Loading finalizado e Simulador da Bola de Neve calculando dados em tempo real no foco do input.
+* [ ] **Dashboard Consolidado:** Criação do painel superior com patrimônio total, variação global e projeção agregada de renda passiva.
+* [ ] **Otimização Mobile:** Implementação de acordeões para ocultar/mostrar detalhes de DY e Renda em telas menores.
+
+### 🔍 Fase 3: Radar de Ativos e Descoberta
+* [ ] **Radar de Oportunidades para Visitantes:** Tela inicial para usuários sem login exibindo uma seleção curada de 5 ações e 5 FIIs no mesmo layout dos cards da carteira. Inclui botão de "Adicionar à Carteira" e foco interativo em quanto o usuário precisa gastar para atingir o gatilho da *Bola de Neve*.
+* [ ] **Busca Direta por Ativo:** Barra de pesquisa instantânea no Radar permitindo consultar qualquer ticker da B3 com o mesmo modelo visual de preview de custos e dividendos.
+* [ ] **Filtros Estratégicos (Motor de Base):** Implementação de regras automatizadas de filtro e busca nos bastidores baseadas na metodologia Barsi (P/VP, DY, histórico), servindo como base para varredura e seleção dos ativos diários monitorados.
+
+### 📱 Fase 4: Comunicação Avançada e Mobile
+* [ ] **Notificações Customizáveis:** Painel para o usuário gerenciar a frequência de e-mails e configurar alertas de variações bruscas.
+* [ ] **Progressive Web App (PWA):** Transformação em aplicativo instalável na tela inicial com suporte a *Web Push Notifications*.
 
