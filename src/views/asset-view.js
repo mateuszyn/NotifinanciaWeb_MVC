@@ -8,11 +8,11 @@ export const AssetView = {
         // Se a busca da API terminar enquanto o usuário estiver em outra página, aborta a renderização.
         const currentHash = window.location.hash;
         if (currentHash !== '' && currentHash !== '#/') {
-            return; 
+            return;
         }
 
         const app = document.querySelector('#app');
-        
+
         // --- TRAVA 2: CORREÇÃO DA GAVETA (ADD ASSET) FECHANDO SOZINHA ---
         // Memoriza se a gaveta estava aberta antes de reconstruir o HTML
         const existingDrawer = document.querySelector('#add-asset-drawer');
@@ -23,14 +23,14 @@ export const AssetView = {
         const firstNameRaw = rawUserName.split(' ')[0].toLowerCase();
         const firstName = firstNameRaw.charAt(0).toUpperCase() + firstNameRaw.slice(1);
         const userName = Security.escapeHTML(firstName);
-        
+
         const currentBroker = user.preferred_broker || 'Nubank';
         const brokerInfo = BROKERS[currentBroker];
 
         const isNotifActive = user.notifications_enabled;
         const bellIcon = isNotifActive ? 'bi-bell-fill text-warning' : 'bi-bell text-secondary';
-        const tooltipMessage = isNotifActive 
-            ? "Notificações Diárias Ativas (18h)" 
+        const tooltipMessage = isNotifActive
+            ? "Notificações Diárias Ativas (18h)"
             : "Ative o sininho para receber relatório diário da carteira";
 
         const portfolioSummary = AssetService.calculatePortfolioSummary(assets);
@@ -61,7 +61,7 @@ export const AssetView = {
             else if (profitPct < 0) borderClass = dailyChange >= 0 ? 'border-loss-dia-pos' : 'border-loss-viva-neg';
 
             const safeTicker = Security.escapeHTML(asset.ticker);
-            
+
             const yieldPct = asset.yieldPct || 0;
             const divMensal = asset.divMensal || 0;
             const divAnual = asset.divAnual || 0;
@@ -119,7 +119,7 @@ export const AssetView = {
                 `;
             }
 
-            const actionButtons = user.isGuest 
+            const actionButtons = user.isGuest
                 ? `<span class="badge bg-secondary">Dados de Exemplo</span>`
                 : `
                    <span id="actions-${asset.ticker}" class="d-flex align-items-center gap-2">
@@ -194,7 +194,7 @@ export const AssetView = {
             </div>
         `).join('');
 
-        const listaAtivosPrompt = assets.map(a => 
+        const listaAtivosPrompt = assets.map(a =>
             `- ${a.ticker} (Qtd: ${a.quantity} cotas): Preço R$ ${(Number(a.currentPrice) || 0).toFixed(2)} | Rentabilidade PM: ${(Number(a.variacaoPm) || 0).toFixed(2)}% | Variação Hoje: ${(Number(a.dailyChange) || 0).toFixed(2)}%`
         ).join('\n');
 
@@ -209,7 +209,7 @@ Com base exclusivamente nesses ativos, por favor gere um relatório estruturado 
 3. Agenda de Proventos: As próximas datas "Com" e "Ex-dividendos" anunciadas ou estimadas para cada um.
 4. Resumo Tático: Uma frase resumindo o momento atual de cada ativo.
 5. Veredito de Aporte: Olhando para o preço atual e o histórico, qual a melhor recomendação de compra HOJE para maximizar o efeito bola de neve da minha carteira?`;
-        
+
         app.innerHTML = `
             <header class="bg-dark px-3 py-3 border-bottom border-secondary">
                 <div class="header-container container-fluid p-0 d-flex flex-column flex-lg-row align-items-center justify-content-between gap-2 gap-lg-3">
@@ -249,10 +249,10 @@ Com base exclusivamente nesses ativos, por favor gere um relatório estruturado 
                             Olá, <b class="text-white">${user.isGuest ? 'Visitante' : userName}</b>
                         </span>
                         
-                        ${user.isGuest 
-                            ? `<button class="btn btn-success btn-sm rounded-pill px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#loginModal">Entrar</button>` 
-                            : `<button id="btn-logout" class="btn btn-outline-danger btn-sm rounded-pill px-3">Sair</button>`
-                        }
+                        ${user.isGuest
+                ? `<button class="btn btn-success btn-sm rounded-pill px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#loginModal">Entrar</button>`
+                : `<button id="btn-logout" class="btn btn-outline-danger btn-sm rounded-pill px-3">Sair</button>`
+            }
                     </div>
 
                 </div>
@@ -357,17 +357,17 @@ Com base exclusivamente nesses ativos, por favor gere um relatório estruturado 
             brokerSelect.addEventListener('change', (e) => {
                 const selected = e.target.value;
                 const info = BROKERS[selected];
-                
+
                 brokerSelect.style.backgroundColor = info.color;
                 brokerSelect.style.color = info.textColor;
-                
+
                 brokerSelect.dispatchEvent(new CustomEvent('brokerChanged', { detail: selected }));
             });
         }
 
         const drawer = document.querySelector('#add-asset-drawer');
         const drawerHeader = document.querySelector('#drawer-toggle');
-        
+
         if (drawer && drawerHeader && !user.isGuest) {
             drawerHeader.replaceWith(drawerHeader.cloneNode(true));
             const newDrawerHeader = document.querySelector('#drawer-toggle');

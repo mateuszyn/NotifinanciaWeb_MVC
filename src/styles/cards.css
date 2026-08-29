@@ -15,6 +15,7 @@
     border-radius: 24px;
     padding: 20px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+    transition: transform 0.2s ease, border-color 0.3s ease;
 }
 
 .asset-card:hover {
@@ -175,6 +176,26 @@
     color: #ff7d92;
 }
 
+.text-profit-pos { color: var(--profit-pos) !important; }
+.text-profit-neg { color: var(--profit-neg) !important; }
+
+.border-profit-viva-pos { border-left: 6px solid #145a32 !important; }
+.border-profit-dia-neg { border-left: 6px solid var(--profit-pos) !important; }
+.border-neutral-portfolio { border-left: 6px solid var(--accent-blue) !important; }
+.border-loss-dia-pos { border-left: 6px solid #f1948a !important; }
+.border-loss-viva-neg { border-left: 6px solid #922b21 !important; }
+
+.price-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.price-value {
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
 @media (max-width: 767px) {
     .portfolio-summary-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -189,4 +210,5 @@
         padding-left: 8px;
         padding-right: 8px;
     }
+}
 }
