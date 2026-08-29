@@ -1,22 +1,28 @@
-import { Security } from '../services/security.js';
+import { Security } from '../infrastructure/security.js';
+import { BROKERS } from '../utils/brokers.js';
 
 export const AssetView = {
     render(assets, user) {
+        // --- TRAVA 1: CORREÇÃO DO BUG DE ROTAS ---
+        // Se a busca da API terminar enquanto o usuário estiver em outra página, aborta a renderização.
+        const currentHash = window.location.hash;
+        if (currentHash !== '' && currentHash !== '#/') {
+            return; 
+        }
+
         const app = document.querySelector('#app');
         
-        // --- NOVO: Extração e Formatação do Primeiro Nome ---
+        // --- TRAVA 2: CORREÇÃO DA GAVETA (ADD ASSET) FECHANDO SOZINHA ---
+        // Memoriza se a gaveta estava aberta antes de reconstruir o HTML
+        const existingDrawer = document.querySelector('#add-asset-drawer');
+        const isDrawerOpen = existingDrawer && !existingDrawer.classList.contains('collapsed');
+
+        // --- Extração e Formatação do Primeiro Nome ---
         const rawUserName = user.user_metadata?.full_name || user.email.split('@')[0];
         const firstNameRaw = rawUserName.split(' ')[0].toLowerCase();
         const firstName = firstNameRaw.charAt(0).toUpperCase() + firstNameRaw.slice(1);
         const userName = Security.escapeHTML(firstName);
         
-        const BROKERS = {
-            'Nubank': { color: '#820AD1', textColor: '#FFFFFF', url: 'https://play.google.com/store/apps/details?id=com.nu.production' },
-            'Inter': { color: '#FF7A00', textColor: '#FFFFFF', url: 'https://play.google.com/store/apps/details?id=br.com.intermedium' },
-            'XP': { color: '#212529', textColor: '#FFFFFF', url: 'https://play.google.com/store/apps/details?id=br.com.xp.carteira' },
-            'Rico': { color: '#005AAA', textColor: '#FF8A00', url: 'https://play.google.com/store/apps/details?id=br.com.rico.mobile' }
-        };
-
         const currentBroker = user.preferred_broker || 'Nubank';
         const brokerInfo = BROKERS[currentBroker];
 
@@ -27,7 +33,7 @@ export const AssetView = {
             : "Ative o sininho para receber relatório diário da carteira";
 
         const cardsHtml = assets.length > 0 ? assets.map(asset => {
-            const profitPct = asset.variacaoPM || 0;
+            const profitPct = asset.variacaoPm || 0;
             const dailyChange = asset.dailyChange || 0;
             const profitTextClass = profitPct >= 0 ? 'text-profit-pos' : 'text-profit-neg';
             const dailyTextClass = dailyChange >= 0 ? 'text-profit-pos' : 'text-profit-neg';
@@ -38,7 +44,7 @@ export const AssetView = {
 
             const safeTicker = Security.escapeHTML(asset.ticker);
             
-            const yieldPct = asset.yieldpct || 0;
+            const yieldPct = asset.yieldPct || 0;
             const divMensal = asset.divMensal || 0;
             const divAnual = asset.divAnual || 0;
             const currentPrice = Number(asset.currentPrice) || 0;
@@ -48,7 +54,6 @@ export const AssetView = {
             const cotasFaltantes = Math.max(0, cotasParaBolaDeNeve - quantity);
             const cotasCompradasPorMes = divMensal > 0 && currentPrice > 0 ? Number((divMensal / currentPrice).toFixed(1)) : 0;
             const cotasCompradasPorAno = divAnual > 0 && currentPrice > 0 ? Number((divAnual / currentPrice).toFixed(1)) : 0;
-            const showZeroVariationWarning = dailyChange === 0 && profitPct === 0;
 
             let snowballMessage = `Faltam ${cotasFaltantes} cotas para a Bola de Neve (${cotasParaBolaDeNeve} cotas)`;
             let snowballColor = '#ff8a8a';
@@ -100,13 +105,11 @@ export const AssetView = {
                 ? `<span class="badge bg-secondary">Dados de Exemplo</span>`
                 : `
                    <span id="actions-${asset.ticker}" class="d-flex align-items-center gap-2">
-                       <!-- ÍCONE DE LOADING INJETADO AQUI (COMEÇA OCULTO) -->
                        <i id="loading-${asset.ticker}" class="bi bi-arrow-repeat text-secondary fs-4 d-none spin-animation"></i>
                        
                        <button id="edit-${asset.ticker}" class="btn btn-link p-0 btn-edit edit-btn-wrapper" data-id="${asset.id}" data-ticker="${safeTicker}" data-qty="${asset.quantity}" data-price="${asset.averagePrice}" aria-label="Editar / Aporte">
                            <span class="edit-icon"><i class="bi bi-pencil text-primary fs-4"></i></span>
                        </button>
-                       <!-- COR DA LIXEIRA CORRIGIDA PARA VERMELHO -->
                        <button id="delete-${asset.ticker}" class="btn btn-link p-0 text-danger btn-delete" data-id="${asset.id}">
                            <i class="bi bi-trash3 text-danger trash-icon fs-4"></i>
                        </button>
@@ -139,7 +142,7 @@ export const AssetView = {
                             </div>
                             <div class="col-6 ps-3">
                                 <p class="price-label">Preço Atual</p>
-                                <p class="price-value d-flex align-items-center gap-1">R$ ${asset.currentPrice.toFixed(2)} <span class="${dailyTextClass} small">(${dailyChange >= 0 ? '+' : ''}${dailyChange.toFixed(2)}%)</span>${showZeroVariationWarning ? '<i class="bi bi-exclamation-triangle text-warning" title="Sem variação capturada. Recarregue se necessário."></i>' : ''}</p>
+                                <p class="price-value d-flex align-items-center gap-1">R$ ${asset.currentPrice.toFixed(2)} <span class="${dailyTextClass} small">(${dailyChange >= 0 ? '+' : ''}${dailyChange.toFixed(2)}%)</span></p>
                             </div>
                         </div>
                         
@@ -150,7 +153,7 @@ export const AssetView = {
                             ${dividendContent}
                         </div>
                         
-                        <a href="${brokerInfo.url}" target="_blank" class="btn w-100 d-flex align-items-center justify-content-center gap-2" 
+                        <a href="${brokerInfo.webUrl || brokerInfo.appUrl}" target="_blank" class="btn w-100 d-flex align-items-center justify-content-center gap-2" 
                            style="background-color: ${brokerInfo.color}; color: ${brokerInfo.textColor}; border: none; font-weight: bold; border-radius: 8px; height: 45px;">
                            <i class="bi bi-box-arrow-up-right"></i> Operar na ${currentBroker}
                         </a>
@@ -172,6 +175,22 @@ export const AssetView = {
                 </div>
             </div>
         `).join('');
+
+        const listaAtivosPrompt = assets.map(a => 
+            `- ${a.ticker} (Qtd: ${a.quantity} cotas): Preço R$ ${(Number(a.currentPrice) || 0).toFixed(2)} | Rentabilidade PM: ${(Number(a.variacaoPm) || 0).toFixed(2)}% | Variação Hoje: ${(Number(a.dailyChange) || 0).toFixed(2)}%`
+        ).join('\n');
+
+        const promptTemplate = `Atue como um analista financeiro sênior especialista na metodologia Barsi e em carteiras previdenciárias de dividendos.
+
+Aqui está a fotografia da minha carteira hoje:
+${listaAtivosPrompt}
+
+Com base exclusivamente nesses ativos, por favor gere um relatório estruturado contendo:
+1. O Cenário de Hoje: O que motivou as maiores altas e quedas do dia.
+2. Radar de Notícias: As últimas notícias relevantes ou fatos relevantes emitidos sobre essas empresas/fundos.
+3. Agenda de Proventos: As próximas datas "Com" e "Ex-dividendos" anunciadas ou estimadas para cada um.
+4. Resumo Tático: Uma frase resumindo o momento atual de cada ativo.
+5. Veredito de Aporte: Olhando para o preço atual e o histórico, qual a melhor recomendação de compra HOJE para maximizar o efeito bola de neve da minha carteira?`;
         
         app.innerHTML = `
             <header class="bg-dark px-3 py-3 border-bottom border-secondary">
@@ -225,19 +244,29 @@ export const AssetView = {
                 <div class="row" id="asset-list">${cardsHtml}</div>
                 
                 ${user.isGuest ? '' : `
-                <div class="text-center mt-4 mb-5">
-                    <button onclick="window.open('https://gemini.google.com/', '_blank')" class="btn btn-primary rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm" style="background-color: #1a73e8; border: none;">
+                <div class="d-flex flex-column align-items-center mt-5 mb-5">
+                    <button onclick="window.open('https://gemini.google.com/', '_blank')" class="btn btn-primary rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center justify-content-center gap-2 shadow-sm mb-4" style="background-color: #1a73e8; border: none;">
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                             <path d="M12 2c-.3 0-.5.2-.6.5L9.2 8.7 3.5 10.9c-.3.1-.5.3-.5.6s.2.5.5.6l5.7 2.2 2.2 5.7c.1.3.3.5.6.5s.5-.2.6-.5l2.2-5.7 5.7-2.2c.3-.1.5-.3.5-.6s-.2-.5-.5-.6l-5.7-2.2-2.2-5.7c-.1-.3-.3-.5-.6-.5z"/>
                         </svg>
                         Pergunte ao Gemini
                     </button>
+                    
+                    <div class="text-start bg-dark border border-secondary rounded p-3" style="max-width: 600px; width: 100%;">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-secondary small fw-bold">📋 Copie o prompt abaixo e cole no Gemini:</span>
+                            <button class="btn btn-sm btn-outline-success border-0 px-2 py-1" onclick="navigator.clipboard.writeText(document.getElementById('gemini-prompt').value).then(() => { this.innerHTML = '<i class=\\'bi bi-check2\\'></i> Copiado!'; setTimeout(() => this.innerHTML = '<i class=\\'bi bi-clipboard\\'></i> Copiar', 2000); })">
+                                <i class="bi bi-clipboard"></i> Copiar
+                            </button>
+                        </div>
+                        <textarea id="gemini-prompt" readonly class="form-control bg-black text-white border-secondary font-monospace" style="height: 180px; font-size: 0.75rem; resize: none;">${promptTemplate}</textarea>
+                    </div>
                 </div>
                 `}
             </div>
 
             ${user.isGuest ? '' : `
-            <div id="add-asset-drawer" class="bottom-drawer collapsed"> 
+            <div id="add-asset-drawer" class="bottom-drawer ${isDrawerOpen ? '' : 'collapsed'}"> 
                 <div class="drawer-header" id="drawer-toggle">
                     <div class="drag-handle"></div>
                     <button class="btn btn-success w-100 fw-bold py-2 mt-3 fake-add-btn">
@@ -248,6 +277,30 @@ export const AssetView = {
             </div>`}
 
             ${user.isGuest ? '' : this.renderUpdateModal()}
+
+            <footer class="institutional-footer mt-auto pt-4 pb-4 border-top border-secondary" style="background: rgba(6, 8, 22, 0.9);">
+                <div class="container text-center">
+                    
+                    <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
+                        <img src="https://notifinancia.online/android-chrome-192x192.png" alt="Notifinancia Logo" width="28" height="28" style="border-radius: 6px;">
+                        <span class="fw-bold text-success fs-5" style="letter-spacing: 1px;">NOTIFINANCIA</span>
+                    </div>
+                    
+                    <div class="footer-links mb-4 d-flex justify-content-center gap-4 flex-wrap">
+                       <a href="#/contato" class="text-decoration-none text-secondary hover-success small fw-bold">Suporte e Contato</a>
+                       <a href="#/termos" class="text-decoration-none text-secondary hover-success small">Termos de Uso</a>
+                       <a href="#/privacidade" class="text-decoration-none text-secondary hover-success small">Política de Privacidade</a>
+                    </div>
+                    
+                    <p class="disclaimer-text text-secondary mx-auto mb-3" style="font-size: 0.72rem; max-width: 850px; line-height: 1.6; text-align: justify; text-align-last: center;">
+                        <strong>Isenção de Responsabilidade:</strong> O Notifinancia é uma ferramenta educacional desenvolvida para o acompanhamento e organização de portfólios financeiros. Os cálculos apresentados (incluindo as projeções de dividendos) são baseados em dados públicos de mercado e <strong>não constituem recomendação de compra, venda ou manutenção de ativos</strong>. Rentabilidade passada não é garantia de rentabilidade futura. Todo investimento em renda variável envolve riscos.
+                    </p>
+                    
+                    <p class="text-secondary small mt-2 mb-0" style="font-size: 0.8rem;">
+                        &copy; ${new Date().getFullYear()} Notifinancia. Todos os direitos reservados.
+                    </p>
+                </div>
+            </footer>
         `;
 
         const sortSelect = document.querySelector('#sort-select');

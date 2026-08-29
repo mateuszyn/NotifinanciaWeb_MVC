@@ -1,5 +1,5 @@
-import { TickerDictionary } from '../models/TickerDictionary.js';
-import { Security } from '../services/security.js';
+import { TickerDictionary } from '../utils/tickerDictionary.js';
+import { Security } from '../infrastructure/security.js';
 import { AssetService } from '../services/assetService.js';
 
 export const AddAssetView = {
@@ -68,7 +68,7 @@ export const AddAssetView = {
         const span = document.createElement('span');
         span.className = 'snowball-add-info';
         span.style.cssText = 'color: #8fe3a7; font-size: 0.85em; margin-left: 5px;';
-        span.textContent = `(Faltam ${cotasParaBolaDeNeve} para a bola de neve)`;
+        span.textContent = `(Compre ${cotasParaBolaDeNeve} para a bola de neve)`;
         quantityLabel.appendChild(span);
     },
 

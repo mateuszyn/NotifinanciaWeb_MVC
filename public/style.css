@@ -14,10 +14,20 @@ body {
     min-height: 100vh;
     background: radial-gradient(circle at top, #17213b 0%, #060816 55%, #03050b 100%);
     color: #f5f7ff;
+    display: flex;
+    flex-direction: column; /* NOVO: Transforma o body em uma coluna flex */
 }
 
 #app {
-    padding: 32px 20px 60px;
+    display: flex;
+    flex-direction: column;
+    flex: 1; /* NOVO: Faz a div principal empurrar o rodapé para baixo */
+    padding: 0; /* Ajustado para remover o padding fixo antigo que atrapalhava o footer */
+}
+
+/* Garante que o container interno tenha respiro */
+#app > .container {
+    flex: 1;
 }
 
 .dashboard-shell {
@@ -164,4 +174,23 @@ h1 {
 
 .magic-box small {
     color: rgba(255,255,255,0.85);
+}
+
+/* --- ESTILOS DO RODAPÉ --- */
+.institutional-footer {
+    width: 100%;
+    margin-top: auto; /* Empurra o rodapé para o final do #app */
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.hover-success {
+    transition: color 0.2s ease-in-out;
+}
+
+.hover-success:hover {
+    color: #28a745 !important;
+}
+
+.disclaimer-text strong {
+    color: #8591af;
 }

@@ -1,28 +1,62 @@
-import './assets/style.css';
+import './styles/style.css';
 import { AuthService } from './services/authService.js';
-import { AssetController } from './controllers/AssetController.js';
-import { AssetView } from './views/AssetView.js';
-import { supabase } from './services/supabaseClient.js';
+import { AssetController } from './controllers/assetController.js';
+import { AssetView } from './views/assetView.js';
+import { TermosView } from './views/termosView.js';
+import { PrivacidadeView } from './views/privacidadeView.js';
+import { ContatoView } from './views/contatoView.js';
+import { supabase } from './infrastructure/supabaseClient.js';
 
-supabase.auth.onAuthStateChange((event, session) => {
+async function handleRouting() {
+    const hash = window.location.hash;
+    const app = document.getElementById('app');
+    const seoFooter = document.getElementById('seo-footer');
+    const drawer = document.getElementById('add-asset-drawer');
+    const modalElement = document.getElementById('loginModal');
+
+    if (modalElement) bootstrap.Modal.getOrCreateInstance(modalElement).hide();
+    if (drawer) drawer.style.display = 'none';
+    if (seoFooter) seoFooter.style.display = 'none';
+
+    // Captura a sessão atual antes de desenhar a tela
+    const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user;
 
+    if (hash === '#/termos') {
+        app.innerHTML = TermosView.render();
+    } else if (hash === '#/privacidade') {
+        app.innerHTML = PrivacidadeView.render();
+    } else if (hash === '#/contato') {
+        app.innerHTML = ContatoView.render(user); // Passamos o usuário como parâmetro
+    } else {
+        renderBasedOnSession(session);
+    }
+}
+
+function checkAuthAndRenderDashboard() {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+        renderBasedOnSession(session);
+    });
+}
+
+function renderBasedOnSession(session) {
+    const user = session?.user;
+    const seoFooter = document.getElementById('seo-footer');
+    const drawer = document.getElementById('add-asset-drawer');
+
     if (user) {
-        const modalElement = document.getElementById('loginModal');
-        if (modalElement) {
-            const modalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
-            modalInstance.hide();
-        }
-
-        const seoFooter = document.getElementById('seo-footer');
         if (seoFooter) seoFooter.style.display = 'none';
-        
-        const drawer = document.getElementById('add-asset-drawer');
         if (drawer) drawer.style.display = 'block';
-
         AssetController.init();
     } else {
         renderGuestMode();
+    }
+}
+
+// Escuta mudanças de login/logout em tempo real na rota principal
+supabase.auth.onAuthStateChange((event, session) => {
+    if (window.location.hash === '' || window.location.hash === '#/') {
+        renderBasedOnSession(session);
     }
 });
 
@@ -62,3 +96,7 @@ function renderGuestMode() {
         btnLogin.setAttribute('data-listener', 'true');
     }
 }
+
+// Inicializa o roteador ao carregar a página e ao mudar a URL
+window.addEventListener('hashchange', handleRouting);
+window.addEventListener('load', handleRouting);
