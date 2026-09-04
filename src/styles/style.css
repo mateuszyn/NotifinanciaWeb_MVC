@@ -1,3 +1,8 @@
+@import url('./cards.css');
+@import url('./modal.css');
+@import url('./login.css');
+@import url('./bottom.css');
+
 /* =========================================
    1. VARIÁVEIS E BASE
    ========================================= */
@@ -86,19 +91,6 @@ body {
     pointer-events: none;
 }
 
-/* =========================================
-   3. CARDS DE ATIVOS (LISTAGEM)
-   ========================================= */
-.asset-card {
-    background-color: var(--card-bg);
-    border-radius: 12px;
-    padding: 1.5rem;
-    border: 1px solid #333;
-    transition: transform 0.2s ease, border-color 0.3s ease;
-}
-
-.asset-card:hover { transform: translateY(-5px); }
-
 /* Indicadores de Lucro/Prejuízo */
 .text-profit-pos { color: var(--profit-pos) !important; }
 .text-profit-neg { color: var(--profit-neg) !important; }
@@ -122,115 +114,7 @@ body {
 }
 
 /* =========================================
-   4. MODAL DE EDIÇÃO (OVERLAY)
-   ========================================= */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(4px);
-    z-index: 9999 !important;
-    display: none;
-    justify-content: center;
-    align-items: center;
-}
-
-.modal-overlay.active { display: flex !important; }
-
-.custom-modal {
-    background-color: var(--modal-bg);
-    padding: 25px;
-    border-radius: 16px;
-    width: 90%;
-    max-width: 400px;
-    border: 1px solid #444;
-    animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes modalPop {
-    0% { transform: scale(0.8); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-/* =========================================
-   5. GAVETA DE ADICIONAR (BOTTOM DRAWER)
-   ========================================= */
-.bottom-drawer {
-    position: fixed;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100%;
-    max-width: 1320px;
-    background-color: var(--modal-bg);
-    border-top-left-radius: 24px;
-    border-top-right-radius: 24px;
-    box-shadow: 0 -5px 30px rgba(0, 0, 0, 0.4);
-    z-index: 1040;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.bottom-drawer.collapsed {
-    transform: translate(-50%, calc(100% - 75px));
-}
-
-.drawer-header {
-    padding: 10px 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    cursor: pointer;
-}
-
-.drag-handle {
-    width: 40px;
-    height: 4px;
-    background-color: #495057;
-    border-radius: 10px;
-    margin-bottom: 5px;
-}
-
-/* Conteúdo interno da gaveta */
-.drawer-content {
-    padding: 10px 15px 40px 15px;
-}
-
-.form-control-sm {
-    height: 34px !important;
-    font-size: 0.85rem !important;
-}
-
-/* Atalhos de Quantidade (+1, +10, +100) */
-.input-group > .qty-btn {
-    flex: 1 !important;
-    font-size: 0.7rem !important;
-    background-color: #1a1d20;
-    border: 1px solid #333;
-    color: #adb5bd;
-}
-
-/* =========================================
-   6. TELAS DE ACESSO (LOGIN / LANDING)
-   ========================================= */
-.login-card {
-    background-color: var(--modal-bg);
-    padding: 40px;
-    border-radius: 24px;
-    border: 1px solid #333;
-}
-
-.btn-google-login {
-    background-color: #ffffff;
-    color: #000000;
-    border-radius: 12px;
-    font-weight: bold;
-}
-
-/* =========================================
-   7. RESPONSIVIDADE (MOBILE)
+   RESPONSIVIDADE (MOBILE)
    ========================================= */
 @media (max-width: 991px) {
     header { padding: 8px !important; }
@@ -246,10 +130,6 @@ body {
         right: 15px;
     }
 
-    .bottom-drawer {
-        max-width: 100%;
-        border-radius: 24px 24px 0 0;
-    }
 }
 
 .spin-animation {

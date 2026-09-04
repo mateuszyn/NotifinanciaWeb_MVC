@@ -1,9 +1,9 @@
-import { AssetService } from '../services/assetService.js';
-import { AssetView } from '../views/assetView.js';
-import { AddAssetView } from '../views/addAssetView.js';
-import { AuthService } from '../services/authService.js';
-import { supabase } from '../infrastructure/supabaseClient.js';
-import { TickerDictionary } from '../utils/tickerDictionary.js';
+import { AssetService } from '../services/asset-service.js';
+import { AssetView } from '../views/asset-view.js';
+import { AddAssetView } from '../views/add-asset-view.js';
+import { AuthService } from '../services/auth-service.js';
+import { supabase } from '../infrastructure/supabase-client.js';
+import { TickerDictionary } from '../utils/ticker-dictionary.js';
 import { Profile } from '../models/profile.js';
 
 export const AssetController = {

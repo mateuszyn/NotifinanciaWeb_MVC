@@ -1,0 +1,58 @@
+.bottom-drawer {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 1320px;
+    background-color: var(--modal-bg);
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    box-shadow: 0 -5px 30px rgba(0, 0, 0, 0.4);
+    z-index: 1040;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bottom-drawer.collapsed {
+    transform: translate(-50%, calc(100% - 75px));
+}
+
+.drawer-header {
+    padding: 10px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+}
+
+.drag-handle {
+    width: 40px;
+    height: 4px;
+    background-color: #495057;
+    border-radius: 10px;
+    margin-bottom: 5px;
+}
+
+.drawer-content {
+    padding: 10px 15px 40px 15px;
+}
+
+.form-control-sm {
+    height: 34px !important;
+    font-size: 0.85rem !important;
+}
+
+.input-group > .qty-btn {
+    flex: 1 !important;
+    font-size: 0.7rem !important;
+    background-color: #1a1d20;
+    border: 1px solid #333;
+    color: #adb5bd;
+}
+
+@media (max-width: 991px) {
+    .bottom-drawer {
+        max-width: 100%;
+        border-radius: 24px 24px 0 0;
+    }
+}

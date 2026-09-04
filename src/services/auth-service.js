@@ -1,4 +1,4 @@
-import { supabase } from '../infrastructure/supabaseClient.js';
+import { supabase } from '../infrastructure/supabase-client.js';
 
 export const AuthService = {
     // Abre a janelinha do Google

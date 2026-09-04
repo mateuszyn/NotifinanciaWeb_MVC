@@ -1,6 +1,6 @@
-import { TickerDictionary } from '../utils/tickerDictionary.js';
+import { TickerDictionary } from '../utils/ticker-dictionary.js';
 import { Security } from '../infrastructure/security.js';
-import { AssetService } from '../services/assetService.js';
+import { AssetService } from '../services/asset-service.js';
 
 export const AddAssetView = {
     render() {

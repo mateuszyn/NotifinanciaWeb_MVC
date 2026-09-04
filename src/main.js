@@ -1,11 +1,11 @@
 import './styles/style.css';
-import { AuthService } from './services/authService.js';
-import { AssetController } from './controllers/assetController.js';
-import { AssetView } from './views/assetView.js';
-import { TermosView } from './views/termosView.js';
-import { PrivacidadeView } from './views/privacidadeView.js';
-import { ContatoView } from './views/contatoView.js';
-import { supabase } from './infrastructure/supabaseClient.js';
+import { AuthService } from './services/auth-service.js';
+import { AssetController } from './controllers/asset-controller.js';
+import { AssetView } from './views/asset-view.js';
+import { TermosView } from './views/termos-view.js';
+import { PrivacidadeView } from './views/privacidade-view.js';
+import { ContatoView } from './views/contato-view.js';
+import { supabase } from './infrastructure/supabase-client.js';
 
 async function handleRouting() {
     const hash = window.location.hash;
