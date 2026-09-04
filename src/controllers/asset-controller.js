@@ -115,19 +115,9 @@ export const AssetController = {
     // 3. ROTEADORES DE EVENTOS
     // ==========================================
     handleClicks(e) {
-<<<<<<< Updated upstream
-        if (e.target.closest('#btn-retry-price')) {
-            if (this.onRetryPriceForm) this.onRetryPriceForm(e);
-            else if (this.onFetchCurrentPrice) this.onFetchCurrentPrice(e.target.closest('#btn-retry-price'));
-        }
-        if (e.target.closest('.qty-btn')) this.onQuickAddQty(e);
-        if (e.target.closest('.btn-quick-qty')) this.onQuickQty(e);
-        if (e.target.closest('.btn-quick-price')) this.onQuickPrice(e);
-        if (e.target.closest('.btn-delete')) this.onDeleteAsset(e.target.closest('.btn-delete'));
-=======
         if (e.target.closest('#btn-copy-gemini-prompt')) this.onCopyGeminiPrompt(e.target.closest('#btn-copy-gemini-prompt'));
         if (e.target.closest('#btn-retry-price')) this.onFetchCurrentPrice(e.target.closest('#btn-retry-price'));
->>>>>>> Stashed changes
+        if (e.target.closest('.qty-btn')) this.onQuickAddQty(e);
         if (e.target.closest('.btn-quick-qty')) this.onQuickQty(e);
         if (e.target.closest('.btn-quick-price')) this.onQuickPrice(e);
         if (e.target.closest('.btn-delete')) this.onDeleteAsset(e.target.closest('.btn-delete'));

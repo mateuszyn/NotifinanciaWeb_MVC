@@ -1,23 +1,11 @@
-import { AssetController } from './controllers/asset-controller.js';
-import { supabase } from './infrastructure/supabase-client.js';
-import { AuthService } from './services/auth-service.js';
-import { AssetView } from './views/asset-view.js';
-import { ContactView } from './views/contact-view.js';
-import { PrivacyView } from './views/privacy-view.js';
-import { TermsView } from './views/terms-view.js';
-import './styles/style.css';
 import { AuthService } from './services/auth-service.js';
 import { AssetController } from './controllers/asset-controller.js';
 import { PortfolioView } from './views/portfolio-view.js';
-import { TermosView } from './views/termos-view.js';
-import { PrivacidadeView } from './views/privacidade-view.js';
-import { ContatoView } from './views/contato-view.js';
+import { TermsView } from './views/termos-view.js';
+import { PrivacyView } from './views/privacidade-view.js';
+import { ContactView } from './views/contato-view.js';
 import { supabase } from './infrastructure/supabase-client.js';
 import './styles/style.css';
-import './styles/bottom.css';
-import './styles/cards.css';
-import './styles/login.css';
-import './styles/modal.css';
 
 async function handleRouting() {
     const hash = window.location.hash;
