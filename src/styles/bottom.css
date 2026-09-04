@@ -1,3 +1,6 @@
+/* =========================================
+   5. GAVETA DE ADICIONAR (BOTTOM DRAWER)
+   ========================================= */
 .bottom-drawer {
     position: fixed;
     bottom: 0;
@@ -18,7 +21,7 @@
 }
 
 .drawer-header {
-    padding: 10px 20px 20px;
+padding: 10px 20px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -33,6 +36,7 @@
     margin-bottom: 5px;
 }
 
+/* Conteúdo interno da gaveta */
 .drawer-content {
     padding: 10px 15px 40px 15px;
 }
@@ -42,6 +46,7 @@
     font-size: 0.85rem !important;
 }
 
+/* Atalhos de Quantidade (+1, +10, +100) */
 .input-group > .qty-btn {
     flex: 1 !important;
     font-size: 0.7rem !important;

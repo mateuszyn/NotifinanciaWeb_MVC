@@ -1,6 +1,4 @@
-import { TickerDictionary } from '../utils/ticker-dictionary.js';
 import { Security } from '../infrastructure/security.js';
-import { AssetService } from '../services/asset-service.js';
 
 export const AddAssetView = {
     render() {
@@ -11,27 +9,19 @@ export const AddAssetView = {
             quantity: currentForm.querySelector('#quantity')?.value || '',
             averagePrice: currentForm.querySelector('#averagePrice')?.value || ''
         } : null;
-        
         container.innerHTML = `
             <form id="form-asset" class="mt-2">
                 <div class="row g-2 align-items-end">
                     <div class="form-group mb-3 position-relative">
                         <label class="small text-secondary fw-bold mb-1">Ticker</label>
-                        
                         <input type="text" id="asset-ticker" class="form-control bg-black text-white border-secondary text-uppercase" autocomplete="off" placeholder="Ex: PETR4" required>
-
-                        <ul id="ticker-suggestions" class="dropdown-menu w-100 shadow-lg bg-dark border-secondary" style="display: none; position: absolute; top: 100%; z-index: 1000;">
-                        </ul>
+                        <ul id="ticker-suggestions" class="dropdown-menu w-100 shadow-lg bg-dark border-secondary" style="display: none; position: absolute; top: 100%; z-index: 1000;"></ul>
                     </div>
 
                     <div class="col-8 col-md-4">
-                        <label for="quantity" class="small text-secondary fw-bold mb-1 d-flex align-items-center gap-2">
-                            Quantidade
-                        </label>
+                        <label for="quantity" class="small text-secondary fw-bold mb-1 d-flex align-items-center gap-2">Quantidade</label>
                         <div class="input-group input-group-sm">
-                            <input type="number" id="quantity" 
-                                   class="form-control bg-black text-white border-secondary" 
-                                   placeholder="0" step="any" style="flex: 1.5;">
+                            <input type="number" id="quantity" class="form-control bg-black text-white border-secondary" placeholder="0" step="any" style="flex: 1.5;">
                             <button type="button" class="btn btn-dark border-secondary qty-btn px-2" data-add="1">+1</button>
                             <button type="button" class="btn btn-dark border-secondary qty-btn px-2" data-add="10">+10</button>
                             <button type="button" class="btn btn-dark border-secondary qty-btn px-2" data-add="100">+100</button>
@@ -41,25 +31,23 @@ export const AddAssetView = {
                     <div class="col-8 col-md-3">
                         <label for="averagePrice" class="small text-secondary fw-bold mb-1">P. Médio (R$)</label>
                         <div class="input-group input-group-sm">
-                            <input type="number" step="0.01" id="averagePrice" 
-                                   class="form-control bg-black text-white border-secondary" 
+                            <input type="number" step="0.01" id="averagePrice"
+                                   class="form-control bg-black text-white border-secondary"
                                    placeholder="0.00">
-                            <button type="button" id="btn-retry-price" class="btn btn-outline-primary px-2" title="Preencher com o valor atual">
-                                $ Atual
+                            <button type="button" id="btn-retry-price" class="btn btn-outline-primary px-2" title="Preencher com o valor atual" aria-label="Preencher com o valor atual">
+                                <i class="bi bi-arrow-clockwise"></i> $ Atual
+                            </button>
                             </button>
                         </div>
                     </div>
 
                     <div class="col-4 col-md-2">
                         <label class="small d-block mb-1" style="visibility: hidden;">Confirmar</label>
-                        <button type="submit" class="btn btn-success w-100 fw-bold btn-sm py-2" style="height: 40px;">
-                            ADICIONAR
-                        </button>
+                        <button type="submit" class="btn btn-success w-100 fw-bold btn-sm py-2" style="height: 40px;">ADICIONAR</button>
                     </div>
                 </div>
             </form>
         `;
-
         if (currentValues) {
             container.querySelector('#asset-ticker').value = currentValues.ticker;
             container.querySelector('#quantity').value = currentValues.quantity;
@@ -72,8 +60,7 @@ export const AddAssetView = {
     injectSnowballInfo(cotasParaBolaDeNeve) {
         const quantityLabel = document.querySelector('label[for="quantity"]');
         if (!quantityLabel) return;
-
-        quantityLabel.querySelectorAll('.snowball-add-info').forEach((el) => el.remove());
+        this.clearSnowballInfo();
 
         if (!Number.isFinite(cotasParaBolaDeNeve) || cotasParaBolaDeNeve <= 0) return;
 
@@ -85,59 +72,6 @@ export const AddAssetView = {
     },
 
     clearSnowballInfo() {
-        document.querySelectorAll('label[for="quantity"] .snowball-add-info').forEach((el) => el.remove());
-    },
-
-    setupEventListeners() {
-        const tickerInput = document.querySelector('#asset-ticker');
-        const suggestionsBox = document.querySelector('#ticker-suggestions');
-
-        if (tickerInput && suggestionsBox) {
-            tickerInput.addEventListener('input', (e) => {
-                const query = e.target.value;
-                if (!query.trim()) {
-                    this.clearSnowballInfo();
-                }
-
-                const results = TickerDictionary.search(query);
-
-                if (results.length > 0 && query.length >= 2) {
-                    suggestionsBox.innerHTML = results.map(t => {
-                        const safeSuggestedTicker = Security.escapeHTML(t);
-                        return `<li><a class="dropdown-item text-white border-bottom border-secondary py-2 cursor-pointer hover-bg-light" href="#">${safeSuggestedTicker}</a></li>`;
-                    }).join('');
-                    
-                    suggestionsBox.style.display = 'block';
-
-                    suggestionsBox.querySelectorAll('.dropdown-item').forEach(item => {
-                        item.addEventListener('click', (ev) => {
-                            ev.preventDefault();
-                            tickerInput.value = ev.target.innerText; 
-                            suggestionsBox.style.display = 'none'; 
-                            tickerInput.dispatchEvent(new Event('focusout', { bubbles: true }));
-                        });
-                    });
-                } else {
-                    suggestionsBox.style.display = 'none';
-                }
-            });
-
-            document.addEventListener('click', (e) => {
-                if (!tickerInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
-                    suggestionsBox.style.display = 'none';
-                }
-            });
-        }
-
-        const qtyInput = document.querySelector('#quantity');
-        const qtyBtns = document.querySelectorAll('.qty-btn');
-
-        qtyBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const addValue = parseFloat(e.target.dataset.add);
-                const currentValue = parseFloat(qtyInput.value) || 0;
-                qtyInput.value = currentValue + addValue;
-            });
-        });
+        document.querySelectorAll('.snowball-add-info').forEach((el) => el.remove());
     }
 };

@@ -1,11 +1,11 @@
-import './styles/style.css';
 import { AuthService } from './services/auth-service.js';
 import { AssetController } from './controllers/asset-controller.js';
-import { AssetView } from './views/asset-view.js';
-import { TermosView } from './views/termos-view.js';
-import { PrivacidadeView } from './views/privacidade-view.js';
-import { ContatoView } from './views/contato-view.js';
+import { PortfolioView } from './views/portfolio-view.js';
+import { TermsView } from './views/termos-view.js';
+import { PrivacyView } from './views/privacidade-view.js';
+import { ContactView } from './views/contato-view.js';
 import { supabase } from './infrastructure/supabase-client.js';
+import './styles/style.css';
 
 async function handleRouting() {
     const hash = window.location.hash;
@@ -23,11 +23,11 @@ async function handleRouting() {
     const user = session?.user;
 
     if (hash === '#/termos') {
-        app.innerHTML = TermosView.render();
+        app.innerHTML = TermsView.render();
     } else if (hash === '#/privacidade') {
-        app.innerHTML = PrivacidadeView.render();
+        app.innerHTML = PrivacyView.render();
     } else if (hash === '#/contato') {
-        app.innerHTML = ContatoView.render(user); // Passamos o usuário como parâmetro
+        app.innerHTML = ContactView.render(user); // Passamos o usuário como parâmetro
     } else {
         renderBasedOnSession(session);
     }
@@ -74,7 +74,7 @@ function renderGuestMode() {
         { id: 3, ticker: 'KLBN4', quantity: 500, averagePrice: 4.10, currentPrice: 4.35, variacaoPM: 6.09, dailyChange: 1.1 }
     ];
 
-    AssetView.render(demoAssets, demoUser);
+    PortfolioView.render(demoAssets, demoUser);
 
     const drawer = document.getElementById('add-asset-drawer');
     if (drawer) drawer.style.display = 'none';

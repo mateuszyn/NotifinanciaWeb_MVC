@@ -1,5 +1,5 @@
 import { AssetService } from '../services/asset-service.js';
-import { AssetView } from '../views/asset-view.js';
+import { PortfolioView } from '../views/portfolio-view.js';
 import { AddAssetView } from '../views/add-asset-view.js';
 import { AuthService } from '../services/auth-service.js';
 import { supabase } from '../infrastructure/supabase-client.js';
@@ -76,7 +76,7 @@ export const AssetController = {
 
     renderLocalState() {
         const sortedAssets = this.sortAssets(this.state.assets, this.state.user.sort_by);
-        AssetView.render(sortedAssets, this.state.user);
+        PortfolioView.render(sortedAssets, this.state.user);
         AddAssetView.render();
     },
 
@@ -108,13 +108,16 @@ export const AssetController = {
         appContainer.addEventListener('change', (e) => this.handleChanges(e));
         appContainer.addEventListener('submit', (e) => this.handleSubmits(e));
         appContainer.addEventListener('focusout', (e) => this.handleFocusOut(e));
+        appContainer.addEventListener('input', (e) => this.handleInputs(e)); // Adicionado
     },
 
     // ==========================================
     // 3. ROTEADORES DE EVENTOS
     // ==========================================
     handleClicks(e) {
+        if (e.target.closest('#btn-copy-gemini-prompt')) this.onCopyGeminiPrompt(e.target.closest('#btn-copy-gemini-prompt'));
         if (e.target.closest('#btn-retry-price')) this.onFetchCurrentPrice(e.target.closest('#btn-retry-price'));
+        if (e.target.closest('.qty-btn')) this.onQuickAddQty(e);
         if (e.target.closest('.btn-quick-qty')) this.onQuickQty(e);
         if (e.target.closest('.btn-quick-price')) this.onQuickPrice(e);
         if (e.target.closest('.btn-delete')) this.onDeleteAsset(e.target.closest('.btn-delete'));
@@ -123,6 +126,60 @@ export const AssetController = {
         if (e.target.closest('#btn-close-modal') || e.target === document.querySelector('#update-modal-overlay')) this.onEditModalClose();
         if (e.target.closest('#btn-toggle-notif')) this.onToggleNotif(e.target.closest('#btn-toggle-notif'));
         if (e.target.closest('#btn-logout')) this.onLogout();
+        
+        // Sugestão ticker (AddAssetView)
+        const suggestionsBox = document.querySelector('#ticker-suggestions');
+        const tickerInput = document.querySelector('#asset-ticker');
+        if (suggestionsBox && e.target.closest('.dropdown-item')) {
+            e.preventDefault();
+            tickerInput.value = e.target.innerText;
+            suggestionsBox.style.display = 'none';
+            tickerInput.dispatchEvent(new Event('focusout', { bubbles: true }));
+        } else if (tickerInput && suggestionsBox && !tickerInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+            suggestionsBox.style.display = 'none';
+        }
+    },
+
+    // Sugestão ticker (AddAssetView)
+    handleInputs(e) {
+        if (e.target.id === 'asset-ticker') this.onTickerInput(e);
+    },
+
+    onTickerInput(e) {
+        const query = e.target.value;
+        const suggestionsBox = document.querySelector('#ticker-suggestions');
+        if (!query.trim()) AddAssetView.clearSnowballInfo();
+
+        const results = TickerDictionary.search(query);
+        if (results.length > 0 && query.length >= 2) {
+            suggestionsBox.innerHTML = results.map(t => {
+                const safeSuggestedTicker = Security.escapeHTML(t);
+                return `<li><a class="dropdown-item text-white border-bottom border-secondary py-2 cursor-pointer hover-bg-light" href="#">${safeSuggestedTicker}</a></li>`;
+            }).join('');
+            suggestionsBox.style.display = 'block';
+        } else {
+            suggestionsBox.style.display = 'none';
+        }
+    },
+
+    onQuickAddQty(e) {
+        const addValue = parseFloat(e.target.dataset.add);
+        const qtyInput = document.querySelector('#quantity');
+        if (!qtyInput) return;
+        const currentValue = parseFloat(qtyInput.value) || 0;
+        qtyInput.value = currentValue + addValue;
+    },
+
+    async onCopyGeminiPrompt(button) {
+        const prompt = document.querySelector('#gemini-prompt');
+        if (!prompt) return;
+
+        await navigator.clipboard.writeText(prompt.value);
+        const originalContent = button.innerHTML;
+        button.innerHTML = '<i class="bi bi-check2"></i> Copiado!';
+        setTimeout(() => {
+            button.innerHTML = originalContent;
+        }, 2000);
     },
 
     handleChanges(e) {

@@ -1,3 +1,6 @@
+/* =========================================
+   4. MODAL DE EDIÇÃO (OVERLAY)
+   ========================================= */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -12,9 +15,7 @@
     align-items: center;
 }
 
-.modal-overlay.active {
-    display: flex !important;
-}
+modal-overlay.active { display: flex !important; }
 
 .custom-modal {
     background-color: var(--modal-bg);

@@ -32,6 +32,7 @@ export class Asset {
                 : 0;
                 
             this.totalValue = this.currentPrice * this.quantity;
+            this.cotasParaBolaDeNeve = (this.divAnual > 0 && this.currentPrice > 0) ? Math.ceil(this.currentPrice / ((this.divAnual / this.quantity) / 12)) : 0; // Calculo Bola de Neve
             this.dataError = false;
         }
     }
@@ -70,6 +71,10 @@ export class Asset {
             : 0;
             
         this.totalValue = this.currentPrice * this.quantity;
+        
+        // Calculo Bola de Neve
+        const rendaMensalPorCota = (this.divAnual > 0 && this.quantity > 0) ? (this.divAnual / this.quantity) / 12 : 0;
+        this.cotasParaBolaDeNeve = (rendaMensalPorCota > 0 && this.currentPrice > 0) ? Math.ceil(this.currentPrice / rendaMensalPorCota) : 0;
     }
 
     getProfit() {

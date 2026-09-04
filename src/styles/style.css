@@ -96,11 +96,11 @@ body {
 .text-profit-neg { color: var(--profit-neg) !important; }
 
 /* Bordas Laterais Dinâmicas (Status da Carteira) */
-.border-profit-viva-pos { border-left: 6px solid #145a32 !important; } /* Verde Escuro */
-.border-profit-dia-neg { border-left: 6px solid var(--profit-pos) !important; } /* Verde Claro */
-.border-neutral-portfolio { border-left: 6px solid var(--accent-blue) !important; } /* Azul */
-.border-loss-dia-pos { border-left: 6px solid #f1948a !important; } /* Vermelho Claro */
-.border-loss-viva-neg { border-left: 6px solid #922b21 !important; } /* Vermelho Escuro */
+.border-profit-viva-pos { border-left: 6px solid #145a32 !important; }
+.border-profit-dia-neg { border-left: 6px solid var(--profit-pos) !important; }
+.border-neutral-portfolio { border-left: 6px solid var(--accent-blue) !important; }
+.border-loss-dia-pos { border-left: 6px solid #f1948a !important; }
+.border-loss-viva-neg { border-left: 6px solid #922b21 !important; }
 
 .price-label {
     font-size: 0.7rem;
