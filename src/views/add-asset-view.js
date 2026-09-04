@@ -5,6 +5,12 @@ import { AssetService } from '../services/asset-service.js';
 export const AddAssetView = {
     render() {
         const container = document.querySelector('#form-container');
+        const currentForm = container?.querySelector('#form-asset');
+        const currentValues = currentForm ? {
+            ticker: currentForm.querySelector('#asset-ticker')?.value || '',
+            quantity: currentForm.querySelector('#quantity')?.value || '',
+            averagePrice: currentForm.querySelector('#averagePrice')?.value || ''
+        } : null;
         
         container.innerHTML = `
             <form id="form-asset" class="mt-2">
@@ -38,8 +44,8 @@ export const AddAssetView = {
                             <input type="number" step="0.01" id="averagePrice" 
                                    class="form-control bg-black text-white border-secondary" 
                                    placeholder="0.00">
-                            <button type="button" id="btn-retry-price" class="btn btn-outline-secondary px-2" title="Buscar preço novamente">
-                                <i class="bi bi-arrow-clockwise"></i>
+                            <button type="button" id="btn-retry-price" class="btn btn-outline-primary px-2" title="Preencher com o valor atual">
+                                $ Atual
                             </button>
                         </div>
                     </div>
@@ -53,6 +59,12 @@ export const AddAssetView = {
                 </div>
             </form>
         `;
+
+        if (currentValues) {
+            container.querySelector('#asset-ticker').value = currentValues.ticker;
+            container.querySelector('#quantity').value = currentValues.quantity;
+            container.querySelector('#averagePrice').value = currentValues.averagePrice;
+        }
 
         this.setupEventListeners();
     },

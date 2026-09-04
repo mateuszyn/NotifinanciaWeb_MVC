@@ -114,7 +114,7 @@ export const AssetController = {
     // 3. ROTEADORES DE EVENTOS
     // ==========================================
     handleClicks(e) {
-        if (e.target.closest('#btn-retry-price')) this.onRetryPriceForm(e);
+        if (e.target.closest('#btn-retry-price')) this.onFetchCurrentPrice(e.target.closest('#btn-retry-price'));
         if (e.target.closest('.btn-quick-qty')) this.onQuickQty(e);
         if (e.target.closest('.btn-quick-price')) this.onQuickPrice(e);
         if (e.target.closest('.btn-delete')) this.onDeleteAsset(e.target.closest('.btn-delete'));
@@ -143,50 +143,6 @@ export const AssetController = {
     // 4. LÓGICA DE NEGÓCIO (AÇÕES)
     // ==========================================
     
-    async onRetryPriceForm(e) {
-        const tickerInput = document.querySelector('#asset-ticker');
-        const priceInput = document.querySelector('#averagePrice');
-        const ticker = tickerInput ? tickerInput.value.toUpperCase().trim() : '';
-        
-        if (ticker && ticker.length >= 4) {
-            const originalPlaceholder = priceInput.placeholder;
-            priceInput.value = ''; 
-            priceInput.placeholder = "Buscando Valor Atual...";
-            priceInput.disabled = true; 
-            
-            try {
-                const data = await AssetService.getPrice(ticker);
-                if (data && data.price > 0) {
-                    priceInput.value = data.price.toFixed(2);
-                    
-                    // FAST-PATH: Memoriza que o ativo é válido na API!
-                    this.state.validatedTickers.add(ticker);
-
-                    const yieldAnual = Number(data.yieldPct || 0);
-                    if (yieldAnual > 0) {
-                        const rendaMensalPorCota = (data.price * (yieldAnual / 100)) / 12;
-                        const cotasParaBolaDeNeve = rendaMensalPorCota > 0 ? Math.ceil(data.price / rendaMensalPorCota) : 0;
-                        AddAssetView.injectSnowballInfo(cotasParaBolaDeNeve);
-                    } else {
-                        AddAssetView.clearSnowballInfo();
-                    }
-                } else {
-                    AddAssetView.clearSnowballInfo();
-                    Swal.fire({ toast: true, position: 'top-end', icon: 'warning', title: 'Preço não encontrado. Digite manualmente.', showConfirmButton: false, timer: 3000 });
-                }
-            } catch (err) {
-                AddAssetView.clearSnowballInfo();
-            } finally {
-                priceInput.placeholder = originalPlaceholder;
-                priceInput.disabled = false;
-                priceInput.focus(); 
-            }
-        } else {
-            AddAssetView.clearSnowballInfo();
-            Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Digite um Ticker primeiro.', showConfirmButton: false, timer: 2000 });
-        }
-    },
-
     onQuickQty(e) {
         const delta = Number(e.target.closest('.btn-quick-qty').dataset.val) || 0;
         const qtyInput = document.querySelector('#update-quantity');
@@ -469,42 +425,45 @@ export const AssetController = {
 
     // --- LÓGICA DE FOCUS OUT ---
     async onTickerFocusOut(input) {
-        const ticker = input.value.toUpperCase().trim();
-        const priceInput = document.querySelector('#averagePrice');
+        if (!input.value.trim()) AddAssetView.clearSnowballInfo();
+    },
 
-        if (!ticker || ticker.length < 4) return AddAssetView.clearSnowballInfo();
-        
-        if (priceInput && !priceInput.value) {
-            const originalPlaceholder = priceInput.placeholder;
-            priceInput.placeholder = "Buscando Valor Atual...";
-            priceInput.disabled = true; 
-            
-            try {
-                const data = await AssetService.getPrice(ticker);
-                if (data && data.price > 0 && !priceInput.value) {
-                    priceInput.value = data.price.toFixed(2);
-                    
-                    // FAST-PATH: Memoriza o ativo validado para acelerar o salvamento depois
-                    this.state.validatedTickers.add(ticker);
-                }
-                
-                if (data && data.price > 0) {
-                    const yieldAnual = Number(data.yieldPct || 0);
-                    if (yieldAnual > 0) {
-                        const rendaMensal = (data.price * (yieldAnual / 100)) / 12;
-                        AddAssetView.injectSnowballInfo(rendaMensal > 0 ? Math.ceil(data.price / rendaMensal) : 0);
-                    } else {
-                        AddAssetView.clearSnowballInfo();
-                    }
-                } else {
-                    AddAssetView.clearSnowballInfo();
-                }
-            } catch (err) {
+    async onFetchCurrentPrice(button) {
+        const tickerInput = document.querySelector('#asset-ticker');
+        const priceInput = document.querySelector('#averagePrice');
+        const ticker = tickerInput?.value.toUpperCase().trim();
+
+        if (!ticker || ticker.length < 4 || !priceInput) {
+            return this.showError('Informe um ticker válido antes de buscar o valor atual.');
+        }
+
+        const originalText = button.innerHTML;
+        const originalPlaceholder = priceInput.placeholder;
+        button.disabled = true;
+        button.innerHTML = '<i class="bi bi-arrow-repeat spin-animation"></i>';
+        priceInput.placeholder = 'Buscando Valor Atual...';
+
+        try {
+            const data = await AssetService.getPrice(ticker);
+            if (!data || data.price <= 0) throw new Error('Não foi possível obter o valor atual.');
+
+            const currentPriceInput = document.querySelector('#averagePrice');
+            if (currentPriceInput) currentPriceInput.value = data.price.toFixed(2);
+            this.state.validatedTickers.add(ticker);
+
+            const yieldAnual = Number(data.yieldPct || 0);
+            if (yieldAnual > 0) {
+                const rendaMensal = (data.price * (yieldAnual / 100)) / 12;
+                AddAssetView.injectSnowballInfo(rendaMensal > 0 ? Math.ceil(data.price / rendaMensal) : 0);
+            } else {
                 AddAssetView.clearSnowballInfo();
-            } finally {
-                priceInput.placeholder = originalPlaceholder;
-                priceInput.disabled = false;
             }
+        } catch (error) {
+            this.showError(error.message);
+        } finally {
+            button.disabled = false;
+            button.innerHTML = originalText;
+            priceInput.placeholder = originalPlaceholder;
         }
     },
 
