@@ -347,30 +347,12 @@ export const AssetController = {
         if (!qtyInput.value || !priceInput.value) return this.showError('Preencha a quantidade e o preço médio.');
 
         const data = { quantity: Number(qtyInput.value), averagePrice: parseFloat(priceInput.value) };
-        const editButton = document.querySelector(`.btn-edit[data-id="${id}"]`);
-        const deleteButton = document.querySelector(`.btn-delete[data-id="${id}"]`);
-        const ticker = editButton?.dataset.ticker || '';
-        const loadingIcon = ticker ? document.getElementById(`loading-${ticker}`) : null;
-
-        if (loadingIcon) { loadingIcon.classList.remove('d-none'); loadingIcon.classList.add('d-inline-block'); }
-        if (editButton) editButton.style.display = 'none';
-        if (deleteButton) deleteButton.style.display = 'none';
         this.onEditModalClose();
 
         try {
             await AssetService.updateAsset(id, data);
-            const asset = this.state.assets.find(a => Number(a.id) === Number(id));
-            if (asset) {
-                asset.quantity = data.quantity;
-                asset.averagePrice = data.averagePrice;
-                asset.enrich({ price: asset.currentPrice, changePercent: asset.dailyChange, yieldPct: asset.yieldPct });
-            }
-            this.renderLocalState();
-            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Ativo atualizado!', showConfirmButton: false, timer: 2000 });
+            await this.init();
         } catch (error) {
-            if (loadingIcon) { loadingIcon.classList.add('d-none'); loadingIcon.classList.remove('d-inline-block'); }
-            if (editButton) editButton.style.display = 'inline-block';
-            if (deleteButton) deleteButton.style.display = 'inline-block';
             this.showError("Erro: " + error.message);
         }
     },
