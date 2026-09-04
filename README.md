@@ -102,7 +102,7 @@ O Vercel CLI irá subir o servidor de desenvolvimento, conectar a API Python e d
 
 ### ⚡ Fase 2: UX Fluida, Inteligência de Dados e Resumo
 * [x] **UX de Edição Dinâmica:** Skeleton Loading finalizado e Simulador da Bola de Neve calculando dados em tempo real no foco do input.
-* [ ] **Dashboard Consolidado:** Criação do painel superior com patrimônio total, variação global e projeção agregada de renda passiva.
+* [x] **Dashboard Consolidado:** Criação do painel superior com patrimônio total, variação global e projeção agregada de renda passiva.
 * [ ] **Otimização Mobile:** Implementação de acordeões para ocultar/mostrar detalhes de DY e Renda em telas menores.
 
 ### 🔍 Fase 3: Radar de Ativos e Descoberta

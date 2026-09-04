@@ -1,5 +1,6 @@
 import { Security } from '../infrastructure/security.js';
 import { BROKERS } from '../utils/brokers.js';
+import { AssetService } from '../services/asset-service.js';
 
 export const AssetView = {
     render(assets, user) {
@@ -31,6 +32,23 @@ export const AssetView = {
         const tooltipMessage = isNotifActive 
             ? "Notificações Diárias Ativas (18h)" 
             : "Ative o sininho para receber relatório diário da carteira";
+
+        const portfolioSummary = AssetService.calculatePortfolioSummary(assets);
+        const formatCurrency = value => new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+        }).format(value);
+        const profitClass = portfolioSummary.profit >= 0 ? 'positive' : 'negative';
+        let portfolioBorderClass = 'border-neutral-portfolio';
+        if (portfolioSummary.profit > 0) {
+            portfolioBorderClass = portfolioSummary.dailyChangePct >= 0
+                ? 'border-profit-viva-pos'
+                : 'border-profit-dia-neg';
+        } else if (portfolioSummary.profit < 0) {
+            portfolioBorderClass = portfolioSummary.dailyChangePct >= 0
+                ? 'border-loss-dia-pos'
+                : 'border-loss-viva-neg';
+        }
 
         const cardsHtml = assets.length > 0 ? assets.map(asset => {
             const profitPct = asset.variacaoPm || 0;
@@ -241,6 +259,34 @@ Com base exclusivamente nesses ativos, por favor gere um relatório estruturado 
             </header>
 
             <div class="container mt-4 mb-5 pb-5">
+                <section class="portfolio-summary ${portfolioBorderClass} mb-4" aria-label="Resumo consolidado da carteira">
+                    <div class="portfolio-summary-header">
+                        <div>
+                            <span class="summary-eyebrow">Visão consolidada</span>
+                            <h2 class="summary-title">Painel da Carteira</h2>
+                        </div>
+                    </div>
+                    <div class="portfolio-summary-grid">
+                        <div class="summary-metric summary-metric-highlight">
+                            <span>Patrimônio atual</span>
+                            <strong>${formatCurrency(portfolioSummary.currentValue)}</strong>
+                        </div>
+                        <div class="summary-metric">
+                            <span>Variação global</span>
+                            <strong class="${profitClass}">${formatCurrency(portfolioSummary.profit)}</strong>
+                            <small class="${profitClass}">${portfolioSummary.profitPct >= 0 ? '+' : ''}${portfolioSummary.profitPct.toFixed(2)}%</small>
+                        </div>
+                        <div class="summary-metric">
+                            <span>DY esperado anual</span>
+                            <strong>${formatCurrency(portfolioSummary.annualDividends)}</strong>
+                        </div>
+                        <div class="summary-metric">
+                            <span>DY médio mensal</span>
+                            <strong>${portfolioSummary.monthlyYieldPct.toFixed(2)}%</strong>
+                            <small>${formatCurrency(portfolioSummary.annualDividends / 12)} / mês</small>
+                        </div>
+                    </div>
+                </section>
                 <div class="row" id="asset-list">${cardsHtml}</div>
                 
                 ${user.isGuest ? '' : `

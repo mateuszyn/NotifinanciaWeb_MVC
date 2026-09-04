@@ -32,6 +32,42 @@ export const AssetService = {
         });
     },
 
+    calculatePortfolioSummary(assets = []) {
+        const summary = assets.reduce((totals, asset) => {
+            const quantity = Number(asset.quantity) || 0;
+            const averagePrice = Number(asset.averagePrice) || 0;
+            const currentPrice = Number(asset.currentPrice) || 0;
+            const yieldPct = Number(asset.yieldPct) || 0;
+            const dailyChange = Number(asset.dailyChange) || 0;
+            const currentValue = currentPrice * quantity;
+            const investedValue = averagePrice * quantity;
+
+            totals.currentValue += currentValue;
+            totals.investedValue += investedValue;
+            totals.annualDividends += currentValue * (yieldPct / 100);
+            totals.dailyChangeValue += currentValue * (dailyChange / 100);
+            return totals;
+        }, {
+            currentValue: 0,
+            investedValue: 0,
+            annualDividends: 0,
+            dailyChangeValue: 0
+        });
+
+        summary.profit = summary.currentValue - summary.investedValue;
+        summary.profitPct = summary.investedValue > 0
+            ? (summary.profit / summary.investedValue) * 100
+            : 0;
+        summary.dailyChangePct = summary.currentValue > 0
+            ? (summary.dailyChangeValue / summary.currentValue) * 100
+            : 0;
+        summary.monthlyYieldPct = summary.currentValue > 0
+            ? (summary.annualDividends / 12 / summary.currentValue) * 100
+            : 0;
+
+        return summary;
+    },
+
     // Salva o cache de todos os ativos no banco de dados de forma silenciosa
     async saveCacheBackground(assets) {
         try {
