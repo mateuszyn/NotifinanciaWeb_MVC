@@ -118,17 +118,86 @@ body {
    ========================================= */
 @media (max-width: 991px) {
     header { padding: 8px !important; }
+
+    .header-container {
+      display: grid !important;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        align-items: center !important;
+        gap: 8px !important;
+    }
     
     .header-brand {
-        width: 100%;
-        text-align: center;
+        width: auto;
+        flex: 1 1 0;
+        min-width: 0;
+        grid-column: 1;
+        align-self: center;
+        text-align: left !important;
+        overflow: hidden;
+    }
+
+    .title-responsive {
+        font-size: 1.15rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .subtitle-responsive {
+        font-size: 0.65rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .filter-container {
+      grid-column: 2;
+      justify-self: center;
+      flex: 0 0 auto;
+        gap: 4px !important;
     }
 
     .actions-container {
-        position: absolute;
-        top: 12px;
-        right: 15px;
+        position: static;
+      grid-column: 3;
+      justify-self: end;
+        flex: 0 0 auto;
+        gap: 8px !important;
     }
+
+    .actions-container .btn {
+        font-size: 0.75rem;
+    }
+
+    #sort-select, #broker-select {
+        padding: 6px 28px 6px 10px;
+        font-size: 0.75rem;
+    }
+
+}
+
+@media (max-width: 575px) {
+  .header-brand {
+    width: auto;
+    flex-basis: 0;
+    text-align: left !important;
+  }
+
+  .title-responsive {
+    font-size: 1rem;
+  }
+
+  .subtitle-responsive {
+    font-size: 0.58rem;
+    }
+
+  #sort-select {
+    width: 104px;
+  }
+
+  #broker-select {
+    width: 82px;
+  }
 
 }
 
