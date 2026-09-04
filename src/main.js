@@ -8,7 +8,7 @@ import { TermsView } from './views/terms-view.js';
 import './styles/style.css';
 import { AuthService } from './services/auth-service.js';
 import { AssetController } from './controllers/asset-controller.js';
-import { AssetView } from './views/asset-view.js';
+import { PortfolioView } from './views/portfolio-view.js';
 import { TermosView } from './views/termos-view.js';
 import { PrivacidadeView } from './views/privacidade-view.js';
 import { ContatoView } from './views/contato-view.js';
@@ -86,7 +86,7 @@ function renderGuestMode() {
         { id: 3, ticker: 'KLBN4', quantity: 500, averagePrice: 4.10, currentPrice: 4.35, variacaoPM: 6.09, dailyChange: 1.1 }
     ];
 
-    AssetView.render(demoAssets, demoUser);
+    PortfolioView.render(demoAssets, demoUser);
 
     const drawer = document.getElementById('add-asset-drawer');
     if (drawer) drawer.style.display = 'none';

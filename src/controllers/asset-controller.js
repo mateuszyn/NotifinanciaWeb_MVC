@@ -1,5 +1,5 @@
 import { AssetService } from '../services/asset-service.js';
-import { AssetView } from '../views/asset-view.js';
+import { PortfolioView } from '../views/portfolio-view.js';
 import { AddAssetView } from '../views/add-asset-view.js';
 import { AuthService } from '../services/auth-service.js';
 import { supabase } from '../infrastructure/supabase-client.js';
@@ -76,7 +76,7 @@ export const AssetController = {
 
     renderLocalState() {
         const sortedAssets = this.sortAssets(this.state.assets, this.state.user.sort_by);
-        AssetView.render(sortedAssets, this.state.user);
+        PortfolioView.render(sortedAssets, this.state.user);
         AddAssetView.render();
     },
 
@@ -115,6 +115,7 @@ export const AssetController = {
     // 3. ROTEADORES DE EVENTOS
     // ==========================================
     handleClicks(e) {
+<<<<<<< Updated upstream
         if (e.target.closest('#btn-retry-price')) {
             if (this.onRetryPriceForm) this.onRetryPriceForm(e);
             else if (this.onFetchCurrentPrice) this.onFetchCurrentPrice(e.target.closest('#btn-retry-price'));
@@ -123,6 +124,10 @@ export const AssetController = {
         if (e.target.closest('.btn-quick-qty')) this.onQuickQty(e);
         if (e.target.closest('.btn-quick-price')) this.onQuickPrice(e);
         if (e.target.closest('.btn-delete')) this.onDeleteAsset(e.target.closest('.btn-delete'));
+=======
+        if (e.target.closest('#btn-copy-gemini-prompt')) this.onCopyGeminiPrompt(e.target.closest('#btn-copy-gemini-prompt'));
+        if (e.target.closest('#btn-retry-price')) this.onFetchCurrentPrice(e.target.closest('#btn-retry-price'));
+>>>>>>> Stashed changes
         if (e.target.closest('.btn-quick-qty')) this.onQuickQty(e);
         if (e.target.closest('.btn-quick-price')) this.onQuickPrice(e);
         if (e.target.closest('.btn-delete')) this.onDeleteAsset(e.target.closest('.btn-delete'));
@@ -173,6 +178,18 @@ export const AssetController = {
         if (!qtyInput) return;
         const currentValue = parseFloat(qtyInput.value) || 0;
         qtyInput.value = currentValue + addValue;
+    },
+
+    async onCopyGeminiPrompt(button) {
+        const prompt = document.querySelector('#gemini-prompt');
+        if (!prompt) return;
+
+        await navigator.clipboard.writeText(prompt.value);
+        const originalContent = button.innerHTML;
+        button.innerHTML = '<i class="bi bi-check2"></i> Copiado!';
+        setTimeout(() => {
+            button.innerHTML = originalContent;
+        }, 2000);
     },
 
     handleChanges(e) {

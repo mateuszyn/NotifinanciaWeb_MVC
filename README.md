@@ -11,6 +11,7 @@ O **Notifinancia** é uma plataforma web completa desenvolvida para o acompanham
 Este projeto foi construído com foco em **performance, resiliência e UX**, resolvendo desafios reais de engenharia de software:
 
 *   **Arquitetura Serverless Híbrida:** Integração fluida entre um Front-end MVC e um Back-end robusto em Python utilizando as *Serverless Functions* da Vercel. Isso eliminou problemas de CORS e reduziu o tempo de resposta das APIs para milissegundos.
+*   **Views Modulares:** A tela da carteira utiliza `PortfolioView` como compositor, delegando header, resumo consolidado, cards de ativos, prompt, modal de edição e rodapé para Views especializadas.
 *   **Resiliência no Web Scraping:** Implementação de mecanismos de *fallback* e cálculos matemáticos "na raça" no Back-end (Python/yfinance) para contornar bloqueios de IP ao buscar o *Dividend Yield* em ambientes de nuvem.
 *   **Integração com IA (Prompt Engineering):** O sistema não apenas exibe dados, mas conta com um motor gerador de *Smart Prompts*. Ele compila os dados da carteira do usuário (ativos, preço médio, variação diária, quantidade) e gera um prompt otimizado para o Google Gemini retornar análises táticas de aporte e leitura de cenário.
 *   **CRON Jobs e Mensageria:** Utilização de *Edge Functions* (Deno/Supabase) para varrer o banco de dados de usuários, compilar o fechamento de mercado e disparar relatórios transacionais via Resend API.
@@ -103,6 +104,7 @@ O Vercel CLI irá subir o servidor de desenvolvimento, conectar a API Python e d
 ### ⚡ Fase 2: UX Fluida, Inteligência de Dados e Resumo
 * [x] **UX de Edição Dinâmica:** Skeleton Loading finalizado e Simulador da Bola de Neve calculando dados em tempo real no foco do input.
 * [x] **Dashboard Consolidado:** Criação do painel superior com patrimônio total, variação global e projeção agregada de renda passiva.
+* [x] **Organização Arquitetural das Views:** Modularização da carteira em `PortfolioView`, `PortfolioHeaderView`, `PortfolioSummaryView`, `AssetCardView`, `PromptView`, `UpdateAssetModalView` e `FooterView`.
 * [ ] **Otimização Mobile:** Implementação de acordeões para ocultar/mostrar detalhes de DY e Renda em telas menores.
 
 ### 🔍 Fase 3: Radar de Ativos e Descoberta
