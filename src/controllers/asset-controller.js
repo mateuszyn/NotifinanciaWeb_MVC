@@ -1,5 +1,5 @@
 import { AssetService } from '../services/asset-service.js';
-import { AssetView } from '../views/asset-view.js';
+import { PortfolioView } from '../views/portfolio-view.js';
 import { AddAssetView } from '../views/add-asset-view.js';
 import { AuthService } from '../services/auth-service.js';
 import { supabase } from '../infrastructure/supabase-client.js';
@@ -76,7 +76,7 @@ export const AssetController = {
 
     renderLocalState() {
         const sortedAssets = this.sortAssets(this.state.assets, this.state.user.sort_by);
-        AssetView.render(sortedAssets, this.state.user);
+        PortfolioView.render(sortedAssets, this.state.user);
         AddAssetView.render();
     },
 

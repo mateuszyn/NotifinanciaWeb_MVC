@@ -114,3 +114,10 @@ O Vercel CLI irá subir o servidor de desenvolvimento, conectar a API Python e d
 * [ ] **Notificações Customizáveis:** Painel para o usuário gerenciar a frequência de e-mails e configurar alertas de variações bruscas.
 * [ ] **Progressive Web App (PWA):** Transformação em aplicativo instalável na tela inicial com suporte a *Web Push Notifications*.
 
+### 🏛️ Fase 5: Evolução Arquitetural e Refatoração de Domínio (Clean MVC)
+* [ ] **Desacoplamento do `AssetController` (God Controller):** Divisão das responsabilidades atuais em controllers focados por domínio e domínio de negócio isolado.
+* [ ] **Criação do `PortfolioController`:** Centralização do orquestrador global responsável por gerenciar o estado da carteira, SWR de preços, ordenações e a composição das views fracionadas.
+* [ ] **Criação do `ProfileController`:** Isolação de todas as regras relativas ao usuário, gerencimento de preferências (corretoras, ordenação padrão), notificações e fluxos de autenticação/logout.
+* [ ] **Modularização da Camada de Visualização (Views):** Decomposição da antiga *God View* (`asset-view.js`) em componentes atômicos e reutilizáveis (`portfolio-header-view.js`, `portfolio-summary-view.js`, `asset-card-view.js`, entre outros).
+* [ ] **Blindagem e Tratamento de Erros:** Substituição de retornos silenciosos em falhas de banco por contratos estruturados (`{ data, error }`), garantindo rastreabilidade de exceções no front-end.
+
