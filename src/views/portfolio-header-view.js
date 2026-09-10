@@ -6,12 +6,14 @@ export const PortfolioHeaderView = {
         const avatarUrl = user.user_metadata?.avatar_url || '';
         const currentBroker = user.preferred_broker || 'Nubank';
         const brokerInfo = BROKERS[currentBroker] || BROKERS.Nubank;
+        
+        // Sino amarelo (#ffc107) quando ativo, cinza quando desativado
         const bellIcon = user.notifications_enabled ? 'bi-bell-fill text-warning' : 'bi-bell text-secondary';
+        
         const tooltipMessage = user.notifications_enabled
             ? 'Notificações Diárias Ativas (18h)'
             : 'Ative o sininho para receber relatório diário da carteira';
 
-        // Gera uma URL de fallback com a primeira letra do nome em um fundo escuro
         const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(rawUserName)}&background=1a1d29&color=007bff&bold=true`;
 
         return `
@@ -37,7 +39,10 @@ export const PortfolioHeaderView = {
                     </div>
                     <div class="d-flex align-items-center justify-content-center gap-3 actions-container">
                         <button id="btn-toggle-notif" class="btn btn-link p-0 shadow-none border-0" ${user.isGuest ? 'disabled' : ''} data-bs-toggle="tooltip" title="${tooltipMessage}">
-                            <span class="notification-mail-icon" aria-hidden="true"><i class="bi bi-envelope-fill fs-4"></i><i class="${bellIcon} notification-bell-icon"></i></span>
+                            <span class="notification-mail-icon" aria-hidden="true">
+                                <i class="bi bi-envelope-fill fs-4"></i>
+                                <i class="${bellIcon} notification-bell-icon"></i>
+                            </span>
                         </button>
                         ${user.isGuest ? '<button class="btn btn-success btn-sm rounded-pill px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#loginModal">Entrar</button>' : `<details class="user-menu"><summary class="user-menu-trigger" aria-label="Abrir menu da conta"><img src="${avatarUrl || fallbackAvatar}" onerror="this.onerror=null;this.src='${fallbackAvatar}';" alt="Foto de ${rawUserName}" class="user-avatar"></summary><div class="user-menu-panel"><div class="user-menu-account"><img src="${avatarUrl || fallbackAvatar}" onerror="this.onerror=null;this.src='${fallbackAvatar}';" alt="" class="user-menu-avatar"><div><strong>${rawUserName}</strong><small>${user.email || ''}</small></div></div><button type="button" id="btn-add-account" class="user-menu-item"><i class="bi bi-person-plus"></i> Adicionar conta</button><button type="button" id="btn-logout" class="user-menu-item user-menu-logout"><i class="bi bi-box-arrow-right"></i> Sair</button></div></details>`}
                     </div>

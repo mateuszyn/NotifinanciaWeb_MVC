@@ -89,6 +89,9 @@ body {
   line-height: 1;
   font-size: 1.55rem;
   color: #ffffff !important;
+  /* Detalhes em vermelho ao redor para simular o estilo Gmail */
+  -webkit-text-stroke: 0.8px #dc3545;
+  filter: drop-shadow(0 0 1px rgba(220, 53, 69, 0.7));
 }
 
 .notification-bell-icon {
@@ -96,7 +99,7 @@ body {
   top: -5px;
   right: -6px;
   font-size: 0.72rem;
-  color: #dc3545 !important;
+  color: #ffc107 !important; /* Amarelo / Dourado em destaque */
   -webkit-text-stroke: 1px var(--card-bg);
 }
 
