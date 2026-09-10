@@ -97,7 +97,7 @@ export const AssetController = {
         }
     },
 
-    // ==========================================
+   // ==========================================
     // 2. DESPACHANTE DE EVENTOS (EVENT DISPATCHER)
     // ==========================================
     setupDelegatedEvents() {
@@ -108,6 +108,15 @@ export const AssetController = {
         appContainer.addEventListener('change', (e) => this.handleChanges(e));
         appContainer.addEventListener('submit', (e) => this.handleSubmits(e));
         appContainer.addEventListener('focusout', (e) => this.handleFocusOut(e));
+
+        // 🌟 NOVO: Fecha qualquer <details> aberto (menu de perfil ou balões de tickers) ao clicar fora
+        document.addEventListener('click', (e) => {
+            document.querySelectorAll('details[open]').forEach((details) => {
+                if (!details.contains(e.target)) {
+                    details.removeAttribute('open');
+                }
+            });
+        });
     },
 
     // ==========================================
@@ -307,7 +316,18 @@ export const AssetController = {
             await supabase.from('profiles').upsert({ id: this.state.user.id, email: this.state.user.email, notifications_enabled: novoEstado, updated_at: new Date() });
             this.state.user.notifications_enabled = novoEstado;
             this.renderLocalState();
-            Swal.fire({ toast: true, position: 'top-end', icon: novoEstado ? 'success' : 'info', title: novoEstado ? 'Notificações Ativadas' : 'Notificações Desativadas', showConfirmButton: false, timer: 2000 });
+            
+            // 🔥 Alerta otimizado com botão de fechar e tamanho compacto
+            Swal.fire({ 
+                toast: true, 
+                position: 'top-end', 
+                icon: novoEstado ? 'success' : 'info', 
+                title: novoEstado ? 'Notificações Ativadas' : 'Notificações Desativadas', 
+                showConfirmButton: false, 
+                showCloseButton: true, // Adiciona o X
+                timer: 4000,
+                timerProgressBar: true
+            });
         } catch (error) {
             icon.classList.remove('bell-animating');
             this.showError("Erro ao atualizar notificações.");

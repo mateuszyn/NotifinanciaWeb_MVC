@@ -1,3 +1,6 @@
+/* =========================================
+   1. LAYOUT GERAL E SHELL
+   ========================================= */
 .dashboard-shell {
     max-width: 1180px;
     margin: 0 auto;
@@ -9,12 +12,17 @@
     gap: 20px;
 }
 
+
+/* =========================================
+   2. CARDS DE ATIVOS
+   ========================================= */
 .asset-card {
     background: linear-gradient(145deg, rgba(17, 24, 45, 0.95), rgba(7, 12, 24, 0.95));
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 24px;
     padding: 20px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+    transition: transform 0.2s ease;
 }
 
 .asset-card:hover {
@@ -64,6 +72,10 @@
     font-size: 1rem;
 }
 
+
+/* =========================================
+   3. UTILITÁRIOS DE CORES E PILLS
+   ========================================= */
 .pill {
     padding: 6px 10px;
     border-radius: 999px;
@@ -81,6 +93,10 @@
     color: #ff7d92;
 }
 
+
+/* =========================================
+   4. MAGIC BOX (SIMULADOR / PROMPT)
+   ========================================= */
 .magic-box {
     margin-top: 18px;
     padding: 16px;
@@ -98,6 +114,10 @@
     color: rgba(255,255,255,0.85);
 }
 
+
+/* =========================================
+   5. PAINEL CONSOLIDADO (PORTFOLIO SUMMARY)
+   ========================================= */
 .portfolio-summary {
     background: linear-gradient(145deg, rgba(17, 24, 45, 0.95), rgba(7, 12, 24, 0.95));
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -112,6 +132,7 @@
     justify-content: space-between;
     gap: 16px;
     margin-bottom: 18px;
+    flex-wrap: wrap;
 }
 
 .summary-eyebrow {
@@ -175,6 +196,97 @@
     color: #ff7d92;
 }
 
+
+/* =========================================
+   6. MINI RELATÓRIO / RAIO-X (QUADRADINHOS)
+   ========================================= */
+.ticker-squares-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-width: 210px; /* Alinha em blocos compactos ao lado do título */
+    justify-content: flex-end;
+}
+
+.ticker-square-wrapper {
+    position: relative;
+    list-style: none;
+}
+
+.ticker-square-wrapper summary::-webkit-details-marker {
+    display: none;
+}
+
+.ticker-square {
+    width: 44px;
+    height: 44px;
+    background-color: rgba(255, 255, 255, 0.04);
+    border: 2px solid #444;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.ticker-square:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
+}
+
+.ticker-symbol {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #fff;
+    text-align: center;
+}
+
+
+/* =========================================
+   7. POPOVER (BALÃOZINHO DE DETALHES)
+   ========================================= */
+.ticker-popover {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--modal-bg, #212529);
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 8px 12px;
+    width: 130px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    z-index: 1200;
+    font-size: 0.78rem;
+    animation: fadeInPopover 0.15s ease-in-out;
+}
+
+.ticker-popover-title {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 4px;
+    padding-bottom: 2px;
+    text-align: center;
+    color: #fff;
+}
+
+.ticker-popover-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2px;
+    color: var(--text-muted, #aaa);
+}
+
+
+/* =========================================
+   8. RESPONSIVIDADE E ANIMAÇÕES
+   ========================================= */
+@keyframes fadeInPopover {
+    from { opacity: 0; transform: translate(-50%, 4px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
 @media (max-width: 767px) {
     .portfolio-summary-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -188,5 +300,10 @@
     .summary-metric {
         padding-left: 8px;
         padding-right: 8px;
+    }
+
+    .ticker-squares-grid {
+        max-width: 100%;
+        justify-content: flex-start;
     }
 }

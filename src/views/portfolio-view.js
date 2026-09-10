@@ -15,7 +15,7 @@ export const PortfolioView = {
         const isDrawerOpen = existingDrawer && !existingDrawer.classList.contains('collapsed');
         const portfolioSummary = AssetService.calculatePortfolioSummary(assets);
 
-        app.innerHTML = `${PortfolioHeaderView.render(user)}<div class="container mt-4 mb-5 pb-5">${PortfolioSummaryView.render(portfolioSummary)}<div class="row" id="asset-list">${AssetCardView.renderList(assets, user)}</div>${PromptView.render(assets, user)}</div>${user.isGuest ? '' : `<div id="add-asset-drawer" class="bottom-drawer ${isDrawerOpen ? '' : 'collapsed'}"><div class="drawer-header" id="drawer-toggle"><div class="drag-handle"></div><button class="btn btn-success w-100 fw-bold py-2 mt-3 fake-add-btn">+ NOVO ATIVO</button></div><div class="drawer-content" id="form-container"></div></div>`}${user.isGuest ? '' : UpdateAssetModalView.render()}${FooterView.render()}`;
+        app.innerHTML = `${PortfolioHeaderView.render(user)}<div class="container mt-4 mb-5 pb-5">${PortfolioSummaryView.render(portfolioSummary, assets)}<div class="row" id="asset-list">${AssetCardView.renderList(assets, user)}</div>${PromptView.render(assets, user)}</div>${user.isGuest ? '' : `<div id="add-asset-drawer" class="bottom-drawer ${isDrawerOpen ? '' : 'collapsed'}"><div class="drawer-header" id="drawer-toggle"><div class="drag-handle"></div><button class="btn btn-success w-100 fw-bold py-2 mt-3 fake-add-btn">+ NOVO ATIVO</button></div><div class="drawer-content" id="form-container"></div></div>`}${user.isGuest ? '' : UpdateAssetModalView.render()}${FooterView.render()}`;
 
         const sortSelect = document.querySelector('#sort-select');
         if (sortSelect && user.sort_by) sortSelect.value = user.sort_by;

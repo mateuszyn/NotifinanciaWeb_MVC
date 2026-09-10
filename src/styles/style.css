@@ -25,6 +25,7 @@ body {
     margin-bottom: 140px; /* Espaço para a gaveta não cobrir os cards */
 }
 
+
 /* =========================================
    2. HEADER E CONTROLES (TOPO)
    ========================================= */
@@ -71,7 +72,10 @@ body {
     min-width: 150px; 
 }
 
-/* Botão de Notificação (Sininho) */
+
+/* =========================================
+   3. NOTIFICAÇÕES E ÍCONES DO TOPO
+   ========================================= */
 #btn-toggle-notif i {
     display: inline-block;
     transition: all 0.3s ease;
@@ -109,7 +113,10 @@ body {
     pointer-events: none;
 }
 
-/* Indicadores de Lucro/Prejuízo */
+
+/* =========================================
+   4. INDICADORES E ESTILOS DE LUCRO/PREJUÍZO
+   ========================================= */
 .text-profit-pos { color: var(--profit-pos) !important; }
 .text-profit-neg { color: var(--profit-neg) !important; }
 
@@ -131,6 +138,10 @@ body {
     font-weight: bold;
 }
 
+
+/* =========================================
+   5. MENU DO USUÁRIO (DROPDOWN)
+   ========================================= */
 .user-menu {
   position: relative;
 }
@@ -222,121 +233,10 @@ body {
   color: #ff7d92;
 }
 
+
 /* =========================================
-   RESPONSIVIDADE (MOBILE)
+   6. SKELETON LOADING E ANIMAÇÕES
    ========================================= */
-@media (max-width: 991px) {
-    header { padding: 8px !important; }
-
-    .header-container {
-      display: grid !important;
-      grid-template-columns: auto minmax(0, 1fr) auto;
-        align-items: start !important;
-        gap: 8px !important;
-    }
-    
-    .header-brand {
-        width: auto;
-        min-width: 0;
-        grid-column: 1;
-        align-self: start;
-        text-align: left !important;
-        overflow: visible;
-    }
-
-    .title-responsive {
-        font-size: 1rem;
-        white-space: nowrap;
-        overflow: visible;
-        text-overflow: clip;
-    }
-
-    .subtitle-responsive {
-        font-size: 0.65rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .filter-container {
-        grid-column: 2;
-        justify-self: stretch;
-        width: 100%;
-        align-self: start;
-        min-width: 0;
-        gap: 4px !important;
-    }
-
-    .actions-container {
-        position: static;
-        grid-column: 3;
-        justify-self: end;
-        align-self: start;
-        gap: 8px !important;
-    }
-
-    .actions-container .btn {
-        font-size: 0.75rem;
-    }
-
-    #sort-select {
-      width: 132px;
-      flex: 0 0 132px;
-    }
-
-    #broker-select {
-      width: 78px;
-      flex: 0 0 78px;
-    }
-
-    #sort-select, #broker-select {
-      min-height: 28px;
-      padding: 4px 22px 4px 7px;
-      font-size: 0.68rem;
-    }
-
-}
-
-@media (max-width: 575px) {
-  .header-container {
-    grid-template-columns: 1fr auto !important;
-    gap: 12px 8px !important;
-  }
-
-  .header-brand {
-    grid-column: 1;
-    grid-row: 1;
-    width: auto;
-    text-align: left !important;
-  }
-
-  .actions-container {
-    grid-column: 2;
-    grid-row: 1;
-    justify-self: end;
-    gap: 12px !important;
-  }
-
-  .filter-container {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    justify-content: center !important; 
-    width: 100%;
-  }
-
-  .title-responsive {
-    font-size: 0.9rem;
-    overflow: visible;
-  }
-
-  .subtitle-responsive {
-    font-size: 0.65rem;
-  }
-
-  #sort-select { width: 140px; flex-basis: 140px; }
-  #broker-select { width: 90px; flex-basis: 90px; }
-}
-
 .spin-animation {
     animation: spin 1s linear infinite;
 }
@@ -419,7 +319,10 @@ body {
   }
 }
 
-/* Custom edit badge wrapper */
+
+/* =========================================
+   7. BOTÕES DE EDIÇÃO E EXCLUSÃO CUSTOMIZADOS
+   ========================================= */
 .edit-btn-wrapper {
   position: relative;
   width: 44px;
@@ -432,15 +335,18 @@ body {
   border: 2px solid #0d6efd;
   border-radius: 8px;
 }
+
 .edit-btn-wrapper .edit-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   z-index: 2;
 }
+
 .edit-btn-wrapper .edit-icon i {
   color: #0d6efd;
 }
+
 .btn-delete {
   width: 44px;
   height: 44px;
@@ -451,6 +357,7 @@ body {
   border-radius: 8px;
   background: transparent;
 }
+
 .btn-delete .trash-icon {
   display: inline-flex;
   align-items: center;
@@ -459,6 +366,7 @@ body {
   font-size: 1.25rem;
   line-height: 1;
 }
+
 .edit-btn-wrapper::before,
 .edit-btn-wrapper::after {
   position: absolute;
@@ -471,15 +379,207 @@ body {
   font-weight: 700;
   z-index: 1;
 }
+
 .edit-btn-wrapper::before {
   content: '+';
   top: 6px;
   left: 6px;
   color: #198754;
 }
+
 .edit-btn-wrapper::after {
   content: '-';
   bottom: 6px;
   right: 6px;
   color: #dc3545;
+}
+
+
+/* =========================================
+   8. CUSTOMIZAÇÃO DO SWEETALERT2 TOAST (MOBILE)
+   ========================================= */
+.swal2-container.swal2-toast {
+    padding: 10px !important;
+}
+
+.swal2-popup.swal2-toast {
+    font-size: 0.8rem !important;
+    /* Reduz o padding e alinha horizontalmente para eliminar espaços vazios */
+    padding: 8px 32px 8px 10px !important; 
+    width: auto !important;
+    max-width: 90vw !important;
+    background: var(--modal-bg, #212529) !important;
+    color: #fff !important;
+    border: 1px solid #444 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4) !important;
+    position: relative !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.swal2-popup.swal2-toast .swal2-icon {
+    margin: 0 !important;
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    font-size: 10px !important;
+    border-width: 2px !important;
+}
+
+.swal2-popup.swal2-toast .swal2-title {
+    margin: 0 !important;
+    font-size: 0.8rem !important;
+    color: #fff !important;
+    text-align: left !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+}
+
+/* Botão X de fechar fixado no canto superior direito */
+.swal2-popup.swal2-toast .swal2-close {
+    color: #888888 !important;
+    font-size: 1rem !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    transition: color 0.2s ease !important;
+    position: absolute !important;
+    top: 4px !important;
+    right: 6px !important;
+    width: 18px !important;
+    height: 18px !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.swal2-popup.swal2-toast .swal2-close:hover {
+    color: #ffffff !important;
+}
+
+/* =========================================
+   9. RESPONSIVIDADE (MOBILE)
+   ========================================= */
+@media (max-width: 991px) {
+    header { padding: 8px !important; }
+
+    .header-container {
+      display: grid !important;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: start !important;
+        gap: 8px !important;
+    }
+    
+    .header-brand {
+        width: auto;
+        min-width: 0;
+        grid-column: 1;
+        align-self: start;
+        text-align: left !important;
+        overflow: visible;
+    }
+
+    .title-responsive {
+        font-size: 1rem;
+        white-space: nowrap;
+        overflow: visible;
+        text-overflow: clip;
+    }
+
+    .subtitle-responsive {
+        font-size: 0.65rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .filter-container {
+        grid-column: 2;
+        justify-self: stretch;
+        width: 100%;
+        align-self: start;
+        min-width: 0;
+        gap: 4px !important;
+    }
+
+    .actions-container {
+        position: static;
+        grid-column: 3;
+        justify-self: end;
+        align-self: start;
+        gap: 8px !important;
+    }
+
+    .actions-container .btn {
+        font-size: 0.75rem;
+    }
+
+    #sort-select {
+      width: 132px;
+      flex: 0 0 132px;
+    }
+
+    #broker-select {
+      width: 78px;
+      flex: 0 0 78px;
+    }
+
+    #sort-select, #broker-select {
+      min-height: 28px;
+      padding: 4px 22px 4px 7px;
+      font-size: 0.68rem;
+    }
+}
+
+@media (max-width: 575px) {
+  .header-container {
+    grid-template-columns: 1fr auto !important;
+    gap: 12px 8px !important;
+  }
+
+  .header-brand {
+    grid-column: 1;
+    grid-row: 1;
+    width: auto;
+    text-align: left !important;
+  }
+
+  .actions-container {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    gap: 12px !important;
+  }
+
+  .filter-container {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: center !important; 
+    width: 100%;
+  }
+
+  .title-responsive {
+    font-size: 0.9rem;
+    overflow: visible;
+  }
+
+  .subtitle-responsive {
+    font-size: 0.65rem;
+  }
+
+  #sort-select { width: 140px; flex-basis: 140px; }
+  #broker-select { width: 90px; flex-basis: 90px; }
+
+  .swal2-container.swal2-toast {
+      top: 8px !important;
+      right: 8px !important;
+      left: 8px !important;
+      align-items: flex-start !important;
+  }
+  .swal2-popup.swal2-toast {
+      width: 100% !important;
+  }
 }
