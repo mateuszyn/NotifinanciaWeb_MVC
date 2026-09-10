@@ -6,14 +6,28 @@ export const PortfolioSummaryView = {
         if (summary.profit > 0) borderClass = summary.dailyChangePct >= 0 ? 'border-profit-viva-pos' : 'border-profit-dia-neg';
         else if (summary.profit < 0) borderClass = summary.dailyChangePct >= 0 ? 'border-loss-dia-pos' : 'border-loss-viva-neg';
 
-        // Renderiza os quadradinhos dos ativos para o topo direito
+        // ==========================================
+        // 1. COMPONENTE DE EXPLICAÇÃO DO DY (TOOLTIP)
+        // ==========================================
+        const dyInfoTooltip = `
+            <details class="dy-info-wrapper">
+                <summary class="dy-info-btn" aria-label="Informações sobre o cálculo do DY">
+                    <i class="bi bi-info-circle-fill"></i>
+                </summary>
+                <div class="dy-info-popover">
+                    O Dividend Yield (DY) é baseado nos proventos pagos nos últimos 12 meses, obtidos via Yahoo Finance. Trata-se de uma base estimada e indicativa, <strong>não constituindo garantia</strong> de rendimentos futuros.
+                </div>
+            </details>
+        `;
+
+        // ==========================================
+        // 2. RENDERIZAÇÃO DOS QUADRADINHOS DE TICKERS
+        // ==========================================
         const tickersSquaresHtml = assets.map(asset => {
             const pmVal = asset.variacaoPm || asset.variacaoPM || 0;
             const dailyVal = asset.dailyChange || 0;
             const pmClass = pmVal >= 0 ? 'text-profit-pos' : 'text-profit-neg';
             const dailyClass = dailyVal >= 0 ? 'text-profit-pos' : 'text-profit-neg';
-            
-            // Cor da bordinha do quadrado baseada na variação do PM
             const squareBorderClass = pmVal >= 0 ? 'border-success' : 'border-danger';
 
             return `
@@ -34,6 +48,9 @@ export const PortfolioSummaryView = {
             `;
         }).join('');
 
+        // ==========================================
+        // 3. ESTRUTURA HTML DO PAINEL CONSOLIDADO
+        // ==========================================
         return `
             <section class="portfolio-summary ${borderClass} mb-4" aria-label="Resumo consolidado da carteira">
                 <div class="portfolio-summary-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
@@ -61,11 +78,13 @@ export const PortfolioSummaryView = {
                     <div class="summary-metric">
                         <span>DY esperado anual</span>
                         <strong>${formatCurrency(summary.annualDividends)}</strong>
+                        ${dyInfoTooltip}
                     </div>
                     <div class="summary-metric">
                         <span>DY médio mensal</span>
                         <strong>${summary.monthlyYieldPct.toFixed(2)}%</strong>
                         <small>${formatCurrency(summary.annualDividends / 12)} / mês</small>
+                        ${dyInfoTooltip}
                     </div>
                 </div>
             </section>`;

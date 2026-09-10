@@ -583,3 +583,67 @@ body {
       width: 100% !important;
   }
 }
+
+/* =========================================
+   10. TOOLTIP DE INFORMAÇÃO DO DY (BOLINHA 'I')
+   ========================================= */
+.summary-metric,
+.dividend-box-container {
+    position: relative !important; /* Âncora para o ícone absoluto */
+}
+
+.dy-info-wrapper {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: inline-block;
+    list-style: none;
+    z-index: 10;
+}
+
+.dy-info-wrapper summary::-webkit-details-marker {
+    display: none;
+}
+
+.dy-info-btn {
+    background: transparent;
+    border: none;
+    color: #b0bec5; /* Cinza claro bem visível */
+    cursor: pointer;
+    font-size: 1.15rem; /* Ícone maior */
+    padding: 2px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.dy-info-btn:hover {
+    color: #ffffff;
+    transform: scale(1.15);
+}
+
+.dy-info-popover {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    width: 240px;
+    background-color: var(--modal-bg, #212529);
+    border: 1px solid #555;
+    border-radius: 10px;
+    padding: 10px 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+    z-index: 1300;
+    font-size: 0.75rem;
+    color: #cbd5e1;
+    line-height: 1.4;
+    animation: fadeInPopover 0.15s ease-in-out;
+    text-align: left;
+}
+
+@media (max-width: 575px) {
+    .dy-info-popover {
+        width: 200px;
+        right: -10px;
+    }
+}
