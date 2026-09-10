@@ -93,31 +93,50 @@ O Vercel CLI irá subir o servidor de desenvolvimento, conectar a API Python e d
 
 [x] Injeção de Prompts para análises via IA.
 
-## 🗺️ Roadmap de Evolução e Monetização do Notifinancia
+# 🗺️ Roadmap de Evolução e Monetização do Notifinancia
 
-### 🚀 Fase 1: Fundação, Legislação e Monetização Inicial
+Este documento apresenta o planejamento estratégico e o acompanhamento das fases de evolução, melhorias de UX, expansão de funcionalidades e refatoração arquitetural do **Notifinancia**.
+
+---
+
+## 🚀 Fase 1: Fundação, Legislação e Monetização Inicial
+
 * [x] **Aviso de Venda de FIIs:** Alerta de DARF e tutorial inseridos diretamente na exclusão de ativos com lucro.
-* [x] **Rodapé Profissional & Proteção Jurídica:** Views de Termos, Privacidade, Contato e Disclaimer configuradas de forma responsiva via *Hash Routing*.
+* [x] **Rodapé Profissional & Proteção Jurídica:** Views de Termos, Privacidade, Contato e Disclaimer configuradas de forma responsiva via Hash Routing.
 * [ ] **Monetização:** Injeção do bloco de Ads/parceiros para faturamento institucional.
 
-### ⚡ Fase 2: UX Fluida, Inteligência de Dados e Resumo
+---
+
+## ⚡ Fase 2: UX Fluida, Inteligência de Dados e Resumo
+
 * [x] **UX de Edição Dinâmica:** Skeleton Loading finalizado e Simulador da Bola de Neve calculando dados em tempo real no foco do input.
-* [x] **Dashboard Consolidado:** Criação do painel superior com patrimônio total, variação global e projeção agregada de renda passiva.
+* [x] **Dashboard Consolidado & Raio-X Rápido:** Painel superior dinâmico com patrimônio total, variação global, projeção de renda passiva e grade interativa de mini-cards de tickers integrados por popover (`<details>`).
+* [x] **Transparência de Indicadores (DY):** Inserção de ícones informativos ("i") customizados e responsivos nas boxes de DY (tanto no painel consolidado quanto nos cards individuais), detalhando a base de cálculo de 12 meses via Yahoo Finance e lembrando seu caráter estimado/não garantido.
+* [x] **Estética Inspirada no Ecossistema de E-mail:** Customização visual do header com o ícone de envelope estilizado em tons de destaque e sino de notificações em amarelo vivo.
+* [ ] **Impressão e Exportação Avançada da Carteira:** Adicionar ícone de atalho no header para disparo de impressão layout-desktop (grid completo exibindo todos os ativos organizados lado a lado, ignorando o formato mobile simplificado). *(Pendente)*
 * [ ] **Otimização Mobile:** Implementação de acordeões para ocultar/mostrar detalhes de DY e Renda em telas menores.
 
-### 🔍 Fase 3: Radar de Ativos e Descoberta
-* [ ] **Radar de Oportunidades para Visitantes:** Tela inicial para usuários sem login exibindo uma seleção curada de 5 ações e 5 FIIs no mesmo layout dos cards da carteira. Inclui botão de "Adicionar à Carteira" e foco interativo em quanto o usuário precisa gastar para atingir o gatilho da *Bola de Neve*.
+---
+
+## 🔍 Fase 3: Radar de Ativos e Descoberta
+
+* [ ] **Radar de Oportunidades para Visitantes:** Tela inicial para usuários sem login exibindo uma seleção curada de 5 ações e 5 FIIs no mesmo layout dos cards da carteira. Inclui botão de "Adicionar à Carteira" e foco interativo em quanto o usuário precisa gastar para atingir o gatilho da Bola de Neve.
 * [ ] **Busca Direta por Ativo:** Barra de pesquisa instantânea no Radar permitindo consultar qualquer ticker da B3 com o mesmo modelo visual de preview de custos e dividendos.
 * [ ] **Filtros Estratégicos (Motor de Base):** Implementação de regras automatizadas de filtro e busca nos bastidores baseadas na metodologia Barsi (P/VP, DY, histórico), servindo como base para varredura e seleção dos ativos diários monitorados.
 
-### 📱 Fase 4: Comunicação Avançada e Mobile
+---
+
+## 📱 Fase 4: Comunicação Avançada e Mobile
+
 * [ ] **Notificações Customizáveis:** Painel para o usuário gerenciar a frequência de e-mails e configurar alertas de variações bruscas.
-* [ ] **Progressive Web App (PWA):** Transformação em aplicativo instalável na tela inicial com suporte a *Web Push Notifications*.
+* [ ] **Progressive Web App (PWA):** Transformação em aplicativo instalável na tela inicial com suporte a Web Push Notifications.
 
-### 🏛️ Fase 5: Evolução Arquitetural e Refatoração de Domínio (Clean MVC)
-* [ ] **Desacoplamento do `AssetController` (God Controller):** Divisão das responsabilidades atuais em controllers focados por domínio e domínio de negócio isolado.
-* [ ] **Criação do `PortfolioController`:** Centralização do orquestrador global responsável por gerenciar o estado da carteira, SWR de preços, ordenações e a composição das views fracionadas.
-* [ ] **Criação do `ProfileController`:** Isolação de todas as regras relativas ao usuário, gerencimento de preferências (corretoras, ordenação padrão), notificações e fluxos de autenticação/logout.
-* [ ] **Modularização da Camada de Visualização (Views):** Decomposição da antiga *God View* (`asset-view.js`) em componentes atômicos e reutilizáveis (`portfolio-header-view.js`, `portfolio-summary-view.js`, `asset-card-view.js`, entre outros).
+---
+
+## 🏛️ Fase 5: Evolução Arquitetural e Refatoração de Domínio (Clean MVC)
+
+* [ ] **Desacoplamento do AssetController (God Controller):** Divisão das responsabilidades atuais em controllers focados por domínio e domínio de negócio isolado.
+* [ ] **Criação do PortfolioController:** Centralização do orquestrador global responsável por gerenciar o estado da carteira, SWR de preços, ordenações e a composição das views fracionadas.
+* [ ] **Criação do ProfileController:** Isolação de todas as regras relativas ao usuário, gerenciamento de preferências (corretoras, ordenação padrão), notificações e fluxos de autenticação/logout.
+* [x] **Modularização da Camada de Visualização (Views):** Decomposição bem-sucedida da antiga God View (`asset-view.js`) em componentes atômicos e reutilizáveis (`portfolio-header-view.js`, `portfolio-summary-view.js`, `asset-card-view.js`, entre outros), com gerenciamento global de eventos de fechamento de popovers e menus.
 * [ ] **Blindagem e Tratamento de Erros:** Substituição de retornos silenciosos em falhas de banco por contratos estruturados (`{ data, error }`), garantindo rastreabilidade de exceções no front-end.
-
