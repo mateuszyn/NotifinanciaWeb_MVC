@@ -122,6 +122,7 @@ export const AssetController = {
         if (e.target.closest('.btn-edit')) this.onEditModalOpen(e.target.closest('.btn-edit'));
         if (e.target.closest('#btn-close-modal') || e.target === document.querySelector('#update-modal-overlay')) this.onEditModalClose();
         if (e.target.closest('#btn-toggle-notif')) this.onToggleNotif(e.target.closest('#btn-toggle-notif'));
+        if (e.target.closest('#btn-add-account')) this.onAddAccount();
         if (e.target.closest('#btn-logout')) this.onLogout();
     },
 
@@ -310,6 +311,14 @@ export const AssetController = {
         } catch (error) {
             icon.classList.remove('bell-animating');
             this.showError("Erro ao atualizar notificações.");
+        }
+    },
+
+    async onAddAccount() {
+        try {
+            await AuthService.signInWithGoogle();
+        } catch (error) {
+            this.showError("Erro ao adicionar nova conta.");
         }
     },
 
