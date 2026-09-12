@@ -3,7 +3,7 @@ import { BROKERS } from '../utils/brokers.js';
 
 export const AssetCardView = {
     renderList(assets, user) {
-        if (!assets.length) return Array.from({ length: 6 }).map(() => `<div class="col-12 col-md-6 col-lg-4 mb-4"><div class="skeleton-card"><div class="skeleton-header"><div class="skeleton-line skeleton-title"></div><div class="skeleton-circle"></div></div><div class="skeleton-block"></div><div class="skeleton-row"><div class="skeleton-block"></div><div class="skeleton-block"></div></div><div class="skeleton-block skeleton-block-lg mt-3"></div></div></div>`).join('');
+        if (!assets.length) return Array.from({ length: 6 }).map(() => '<div class="col-12 col-md-6 col-lg-4 mb-4"><div class="skeleton-card"><div class="skeleton-header"><div class="skeleton-line skeleton-title"></div><div class="skeleton-circle"></div></div><div class="skeleton-block"></div><div class="skeleton-row"><div class="skeleton-block"></div><div class="skeleton-block"></div></div><div class="skeleton-block skeleton-block-lg mt-3"></div></div></div>').join('');
         return assets.map(asset => this.render(asset, user)).join('');
     },
 
@@ -23,17 +23,62 @@ export const AssetCardView = {
         const divAnual = asset.divAnual || 0;
         const currentPrice = Number(asset.currentPrice) || 0;
         const quantity = Number(asset.quantity) || 0;
+        
+        const paidMonths = asset.paidMonths || asset.paid_months || [];
+
         const rendaMensalPorCota = divAnual > 0 && quantity > 0 ? (divAnual / quantity) / 12 : 0;
         const cotasParaBolaDeNeve = rendaMensalPorCota > 0 && currentPrice > 0 ? Math.ceil(currentPrice / rendaMensalPorCota) : 0;
         const cotasFaltantes = Math.max(0, cotasParaBolaDeNeve - quantity);
         const cotasCompradasPorMes = divMensal > 0 && currentPrice > 0 ? Number((divMensal / currentPrice).toFixed(2)) : 0;
         const cotasCompradasPorAno = divAnual > 0 && currentPrice > 0 ? Number((divAnual / currentPrice).toFixed(1)) : 0;
-        const snowballMessage = cotasParaBolaDeNeve > 0 && quantity >= cotasParaBolaDeNeve ? `[v] Bola de Neve! (${cotasParaBolaDeNeve} Cotas)` : `[+] ${cotasFaltantes} cotas para a Bola de Neve (${cotasParaBolaDeNeve} cotas)`;
+        const snowballMessage = cotasParaBolaDeNeve > 0 && quantity >= cotasParaBolaDeNeve ? '[v] Bola de Neve! (' + cotasParaBolaDeNeve + ' Cotas)' : '[+] ' + cotasFaltantes + ' cotas para a Bola de Neve (' + cotasParaBolaDeNeve + ' cotas)';
         const snowballColor = cotasParaBolaDeNeve > 0 && quantity >= cotasParaBolaDeNeve ? '#8fe3a7' : '#ff8a8a';
         
-        // ==========================================
-        // COMPONENTE DE EXPLICAÇÃO DO DY (TOOLTIP)
-        // ==========================================
+        const monthNamesFull = [
+            'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+        ];
+        const monthNamesShort = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
+        const rollingMonths = [];
+        for (let i = 11; i >= 0; i--) {
+            const d = new Date(currentYear, currentMonth - i, 1);
+            const mIdx = d.getMonth() + 1;
+            const yr = d.getFullYear();
+            rollingMonths.push({
+                monthIndex: mIdx,
+                year: yr,
+                short: monthNamesShort[mIdx - 1],
+                full: monthNamesFull[mIdx - 1]
+            });
+        }
+
+        let monthsGridHTML = '<div class="d-flex justify-content-between align-items-center gap-1 mt-2 px-1 py-1 bg-black rounded border border-secondary months-grid-container">';
+        
+        for (let idx = 0; idx < rollingMonths.length; idx++) {
+            const item = rollingMonths[idx];
+            const hasPaid = paidMonths.includes(item.monthIndex);
+            const boxBg = hasPaid ? '#28a745' : '#212529';
+            const textColor = hasPaid ? '#ffffff' : '#495057';
+            const tooltipText = hasPaid 
+                ? `${item.full}/${item.year}: Pago nos últimos 12 meses` 
+                : `${item.full}/${item.year}: Sem provento nos últimos 12m`;
+
+            monthsGridHTML += '<div tabindex="0" class="month-box" onblur="this.blur()" style="width: 20px; height: 20px; background-color: ' + boxBg + '; color: ' + textColor + '; font-size: 0.65rem; font-weight: bold; display: flex; align-items: center; justify-content: center; border-radius: 3px; cursor: pointer; position: relative;">' + item.short + '<span class="month-tooltip">' + tooltipText + '</span></div>';
+
+            if (idx < rollingMonths.length - 1) {
+                const nextItem = rollingMonths[idx + 1];
+                if (item.year !== nextItem.year) {
+                    monthsGridHTML += '<div class="month-year-divider" style="width: 1px; height: 16px; background-color: #6c757d; margin: 0 2px;" title="Virada de Ano"></div>';
+                }
+            }
+        }
+        monthsGridHTML += '</div>';
+
         const dyInfoTooltip = `
             <details class="dy-info-wrapper">
                 <summary class="dy-info-btn" aria-label="Informações sobre o cálculo do DY">
@@ -45,8 +90,9 @@ export const AssetCardView = {
             </details>
         `;
 
-        const dividendContent = asset.dataError ? `<div class="text-center p-2"><p class="small text-warning mb-2">Não foi possível carregar os dados.</p><button class="btn btn-sm btn-outline-warning btn-retry-asset" data-ticker="${safeTicker}"><i class="bi bi-arrow-clockwise"></i> Tentar novamente</button></div>` : yieldPct === 0 ? `<div class="text-center p-2"><p class="small text-warning mb-2">Não foi possível calcular dividendos.</p><button class="btn btn-sm btn-outline-warning" onclick="window.location.reload()"><i class="bi bi-arrow-clockwise"></i> Recarregar</button></div>` : `<div class="d-flex justify-content-around"><div><p class="small text-secondary mb-0">Renda Mensal</p><p class="fw-bold mb-0 text-white">R$ ${divMensal.toFixed(2)}</p><p class="small mt-1 mb-0" style="color: #8fe3a7;">+ ${cotasCompradasPorMes.toFixed(2)} cota(s) / mês</p></div><div><p class="small text-secondary mb-0">Renda Anual</p><p class="fw-bold mb-0 text-white">R$ ${divAnual.toFixed(2)}</p><p class="small mt-1 mb-0" style="color: #8fe3a7;">+ ${cotasCompradasPorAno.toFixed(2)} cota(s) / ano</p></div></div>`;
-        const actions = user.isGuest ? '<span class="badge bg-secondary">Dados de Exemplo</span>' : `<span id="actions-${asset.ticker}" class="d-flex align-items-center gap-2"><button id="edit-${asset.ticker}" class="btn btn-link p-0 btn-edit edit-btn-wrapper" data-id="${asset.id}" data-ticker="${safeTicker}" data-qty="${asset.quantity}" data-price="${asset.averagePrice}" aria-label="Editar / Aporte"><span class="edit-icon"><i class="bi bi-pencil text-primary fs-4"></i></span></button><button id="delete-${asset.ticker}" class="btn btn-link p-0 text-danger btn-delete" data-id="${asset.id}"><i class="bi bi-trash3 text-danger trash-icon fs-4"></i></button></span>`;
+        const dividendContent = asset.dataError ? '<div class="text-center p-2"><p class="small text-warning mb-2">Não foi possível carregar os dados.</p><button class="btn btn-sm btn-outline-warning btn-retry-asset" data-ticker="' + safeTicker + '"><i class="bi bi-arrow-clockwise"></i> Tentar novamente</button></div>' : yieldPct === 0 ? '<div class="text-center p-2"><p class="small text-warning mb-2">Não foi possível calcular dividendos.</p><button class="btn btn-sm btn-outline-warning" onclick="window.location.reload()"><i class="bi bi-arrow-clockwise"></i> Recarregar</button></div>' : '<div class="d-flex justify-content-around"><div><p class="small text-secondary mb-0">Renda Mensal</p><p class="fw-bold mb-0 text-white">R$ ' + divMensal.toFixed(2) + '</p><p class="small mt-1 mb-0" style="color: #8fe3a7;">+ ' + cotasCompradasPorMes.toFixed(2) + ' cota(s) / mês</p></div><div><p class="small text-secondary mb-0">Renda Anual</p><p class="fw-bold mb-0 text-white">R$ ' + divAnual.toFixed(2) + '</p><p class="small mt-1 mb-0" style="color: #8fe3a7;">+ ' + cotasCompradasPorAno.toFixed(2) + ' cota(s) / ano</p></div></div>';
+        
+        const actions = user.isGuest ? '<span class="badge bg-secondary">Dados de Exemplo</span>' : '<span id="actions-' + asset.ticker + '" class="d-flex align-items-center gap-2"><button id="edit-' + asset.ticker + '" class="btn btn-link p-0 btn-edit edit-btn-wrapper" data-id="' + asset.id + '" data-ticker="' + safeTicker + '" data-qty="' + asset.quantity + '" data-price="' + asset.averagePrice + '" aria-label="Editar / Aporte"><span class="edit-icon"><i class="bi bi-pencil text-primary fs-4"></i></span></button><button id="delete-' + asset.ticker + '" class="btn btn-link p-0 text-danger btn-delete" data-id="' + asset.id + '"><i class="bi bi-trash3 text-danger trash-icon fs-4"></i></button></span>';
         
         return `
             <div class="col-12 col-md-6 col-lg-4 mb-4">
@@ -78,6 +124,7 @@ export const AssetCardView = {
                             <span class="badge ${yieldPct > 0 ? 'bg-success' : 'bg-warning'} m-0">${yieldPct > 0 ? 'Yield Anual: ' + yieldPct.toFixed(2) + '%' : 'Sem dados de Dividendos'}</span>
                         </div>
                         ${dividendContent}
+                        ${monthsGridHTML}
                     </div>
                     <a href="${brokerInfo.webUrl || brokerInfo.appUrl}" target="_blank" rel="noopener noreferrer" class="btn w-100 d-flex align-items-center justify-content-center gap-2" style="background-color: ${brokerInfo.color}; color: ${brokerInfo.textColor}; border: none; font-weight: bold; border-radius: 8px; height: 45px;"><i class="bi bi-box-arrow-up-right"></i> Operar na ${brokerName}</a>
                 </div>

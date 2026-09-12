@@ -1,10 +1,10 @@
+from datetime import datetime, timezone
 import logging
 from typing import Any, Dict, List, Optional
 
 import requests
 
 logger = logging.getLogger(__name__)
-
 
 DEFAULT_HEADERS = {
     "User-Agent": (
@@ -16,7 +16,6 @@ DEFAULT_HEADERS = {
     "Accept-Language": "en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7",
     "Connection": "keep-alive",
 }
-
 
 def _should_append_sa(symbol: str) -> bool:
     sym = symbol.upper()
@@ -30,15 +29,14 @@ def _should_append_sa(symbol: str) -> bool:
         return True
     return False
 
-
 def _build_query_symbol(original: str) -> str:
     if _should_append_sa(original):
         return f"{original}.SA"
     return original
 
-
 def _fetch_chart_payload(session: requests.Session, query_symbol: str) -> Optional[Dict[str, Any]]:
-    url = f"https://query2.finance.yahoo.com/v8/finance/chart/{query_symbol}?interval=1d&range=1y&events=div"
+    # Ampliado para range=2y para capturar o histórico completo de proventos sem falhas de corte de data
+    url = f"https://query2.finance.yahoo.com/v8/finance/chart/{query_symbol}?interval=1d&range=2y&events=div"
     try:
         response = session.get(url, headers=DEFAULT_HEADERS, timeout=15)
         response.raise_for_status()
@@ -48,10 +46,9 @@ def _fetch_chart_payload(session: requests.Session, query_symbol: str) -> Option
         if not result:
             return None
         return result[0]
-    except Exception as exc:  # pragma: no cover - defensive layer
-        logger.warning("Falha ao consultar Yahoo Finance para %s: %s", query_symbol, exc)
+    except Exception as exc:
+        logger.warning("Falha ao consultar Yahoo Finance Chart para %s: %s", query_symbol, exc)
         return None
-
 
 def get_market_data(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
     if not symbols:
@@ -68,10 +65,14 @@ def get_market_data(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
 
     results: Dict[str, Dict[str, Any]] = {}
 
+    now_timestamp = int(datetime.now(timezone.utc).timestamp())
+    one_year_ago_timestamp = now_timestamp - (365 * 24 * 60 * 60)
+
     for original_symbol, query_symbol in mapping.items():
         price: Optional[float] = None
         change_percent: Optional[float] = None
         yieldpct = 0.0
+        paid_months: List[int] = []
 
         try:
             result = _fetch_chart_payload(session, query_symbol)
@@ -81,6 +82,7 @@ def get_market_data(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
                     "price": None,
                     "changePercent": None,
                     "yieldpct": 0.0,
+                    "paidMonths": [],
                 }
                 continue
 
@@ -89,41 +91,47 @@ def get_market_data(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
             if price_value is not None:
                 price = float(price_value)
 
-            # EXTRAÇÃO DIRETA DO HISTÓRICO (Garante o cálculo real de ontem vs hoje)
+            # Variação diária
             indicators = result.get("indicators") or {}
             quote_list = indicators.get("quote") or [{}]
             closes = quote_list[0].get("close") or []
-            
-            # Remove valores nulos do final da lista se houver
             valid_closes = [c for c in closes if c is not None]
 
             if price is not None and len(valid_closes) >= 2:
-                # O penúltimo fechamento é o "ontem", e o último é o preço atual/hoje
                 previous_close = float(valid_closes[-2])
                 if previous_close > 0:
                     change_percent = round(((price - previous_close) / previous_close) * 100, 2)
-                    
-                    # Guarda-costas contra bugs do Yahoo (variações irreais acima de 50%)
                     if abs(change_percent) > 50:
                         change_percent = 0.0
             else:
                 change_percent = 0.0
 
+            # Processamento de Dividendos (Janela de 2 anos para os meses, 1 ano estrito para o Yield)
             events = result.get("events") or {}
             dividends = events.get("dividends") or {}
             total_dividends = 0.0
+            months_set = set()
 
             if isinstance(dividends, dict):
                 for dividend in dividends.values():
                     if not isinstance(dividend, dict):
                         continue
                     amount = dividend.get("amount")
-                    if amount is None:
-                        continue
-                    try:
-                        total_dividends += float(amount)
-                    except (TypeError, ValueError):
-                        continue
+                    date_ts = dividend.get("date")
+                    
+                    if date_ts is not None:
+                        try:
+                            dt = datetime.fromtimestamp(int(date_ts), tz=timezone.utc)
+                            # Mapeia o mês no histórico de 2 anos para preencher o grid corretamente
+                            months_set.add(dt.month)
+                            
+                            # Soma para o Yield apenas o que está nos últimos 365 dias
+                            if int(date_ts) >= one_year_ago_timestamp and amount is not None:
+                                total_dividends += float(amount)
+                        except (TypeError, ValueError):
+                            pass
+
+            paid_months = sorted(list(months_set))
 
             if price is not None and price > 0 and total_dividends > 0:
                 yieldpct = round((total_dividends / price) * 100, 2)
@@ -133,7 +141,9 @@ def get_market_data(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
                 "price": price,
                 "changePercent": change_percent,
                 "yieldpct": yieldpct,
+                "paidMonths": paid_months,
             }
+
         except Exception as exc:
             logger.warning("Erro ao montar dados do ticker %s: %s", query_symbol, exc)
             results[original_symbol] = {
@@ -141,6 +151,7 @@ def get_market_data(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
                 "price": None,
                 "changePercent": None,
                 "yieldpct": 0.0,
+                "paidMonths": [],
             }
 
     return results

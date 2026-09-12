@@ -12,17 +12,21 @@ export class Asset {
         this.divMensal = 0;
         this.variacaoPm = 0; 
         this.totalValue = 0;
+        this.priceToBook = null;
+        this.paidMonths = [];
         this.dataError = false;
     }
 
     // Aplica o cache instantâneo enquanto a API não responde
-    applyCache(cachedPrice, cachedChange, cachedYield) {
+    applyCache(cachedPrice, cachedChange, cachedYield, cachedPvb = null, cachedPaidMonths = []) {
         const price = Number(cachedPrice) || 0;
         
         if (price > 0) {
             this.currentPrice = price;
             this.dailyChange = Number(cachedChange) || 0;
             this.yieldPct = Number(cachedYield) || 0;
+            this.priceToBook = cachedPvb !== null && cachedPvb !== undefined ? Number(cachedPvb) : null;
+            this.paidMonths = Array.isArray(cachedPaidMonths) ? cachedPaidMonths : [];
             
             this.divAnual = this.currentPrice * (this.yieldPct / 100) * this.quantity;
             this.divMensal = this.divAnual / 12;
@@ -41,6 +45,17 @@ export class Asset {
         // Verifica se a API não mandou dados (Yahoo falhou ou Vercel dormiu)
         const isMarketDataEmpty = !marketData || Object.keys(marketData).length === 0;
         const fetchedPrice = isMarketDataEmpty ? 0 : (Number(marketData.price || marketData.regularMarketPrice) || 0);
+
+        // Captura o P/VP e os meses pagos enviados pela API (com suporte a variações de chave)
+        const pvbRaw = marketData.priceToBook !== undefined ? marketData.priceToBook : marketData.price_to_book;
+        if (pvbRaw !== null && pvbRaw !== undefined) {
+            this.priceToBook = Number(pvbRaw);
+        }
+
+        const monthsRaw = marketData.paidMonths || marketData.paid_months;
+        if (Array.isArray(monthsRaw)) {
+            this.paidMonths = monthsRaw;
+        }
 
         if (fetchedPrice > 0) {
             // SUCESSO: Atualiza com os dados super frescos do mercado

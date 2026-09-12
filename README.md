@@ -122,7 +122,7 @@ Este documento apresenta o planejamento estratégico e o acompanhamento das fase
 
 * [ ] **Radar de Oportunidades para Visitantes:** Tela inicial para usuários sem login exibindo uma seleção curada de 5 ações e 5 FIIs no mesmo layout dos cards da carteira. Inclui botão de "Adicionar à Carteira" e foco interativo em quanto o usuário precisa gastar para atingir o gatilho da Bola de Neve.
 * [ ] **Busca Direta por Ativo:** Barra de pesquisa instantânea no Radar permitindo consultar qualquer ticker da B3 com o mesmo modelo visual de preview de custos e dividendos.
-* [ ] **Filtros Estratégicos (Motor de Base):** Implementação de regras automatizadas de filtro e busca nos bastidores baseadas na metodologia Barsi (P/VP, DY, histórico), servindo como base para varredura e seleção dos ativos diários monitorados.
+* [x] **Dashboard Consolidado & Raio-X Rápido:** Painel superior dinâmico com patrimônio total, variação global, projeção de renda passiva e grade interativa de mini-cards de tickers integrados por popover
 
 ---
 
