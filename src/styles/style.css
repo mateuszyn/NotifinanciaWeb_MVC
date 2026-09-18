@@ -650,3 +650,9 @@ body {
         right: -10px;
     }
 }
+
+html, body {
+    overflow-x: hidden; /* Corta qualquer elemento que estoure a largura da tela */
+    width: 100%;
+    position: relative;
+}
