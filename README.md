@@ -113,6 +113,8 @@ Este documento apresenta o planejamento estratégico e o acompanhamento das fase
 * [x] **Dashboard Consolidado & Raio-X Rápido:** Painel superior dinâmico com patrimônio total, variação global, projeção de renda passiva e grade interativa de mini-cards de tickers integrados por popover (`<details>`).
 * [x] **Transparência de Indicadores (DY):** Inserção de ícones informativos ("i") customizados e responsivos nas boxes de DY (tanto no painel consolidado quanto nos cards individuais), detalhando a base de cálculo de 12 meses via Yahoo Finance e lembrando seu caráter estimado/não garantido.
 * [x] **Estética Inspirada no Ecossistema de E-mail:** Customização visual do header com o ícone de envelope estilizado em tons de destaque e sino de notificações em amarelo vivo.
+* [x] **Estabilização do Layout Mobile:** Resolução do vazamento horizontal de tela (`overflow-x`) e aprimoramento da gaveta inferior (`bottom-drawer`), garantindo margem de segurança (`safe-area-inset-bottom`) e respiro visual para o botão flutuante de adição de ativos.
+* [ ] **Alternância de Zoom no Portfólio:** Implementação de um controle de zoom para visualização compacta ou expandida dos cards da carteira na versão mobile.
 * [ ] **Impressão e Exportação Avançada da Carteira:** Adicionar ícone de atalho no header para disparo de impressão layout-desktop (grid completo exibindo todos os ativos organizados lado a lado, ignorando o formato mobile simplificado). *(Pendente)*
 * [ ] **Otimização Mobile:** Implementação de acordeões para ocultar/mostrar detalhes de DY e Renda em telas menores.
 
