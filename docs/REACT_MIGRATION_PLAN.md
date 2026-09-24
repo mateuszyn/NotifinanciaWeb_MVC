@@ -1,75 +1,124 @@
-# Plano de Migração: Vanilla JS (MVC) para React
+# Plano de Migração: Vanilla JS (MVC) → React
 
-Este documento detalha o plano para portar o sistema `NotifinanciaWeb_MVC` de Vanilla JavaScript para **React**. O objetivo é modernizar a stack técnica, adotando os padrões de mercado para aplicações front-end, o que facilitará a manutenção e enriquecerá seu portfólio para vagas Fullstack/Front-end.
+> Branch de trabalho: `feature/react-migration`  
+> Produção atual: `main` (Vanilla JS — estável e intacto)  
+> Estratégia adotada: **Strangler Fig** — construção incremental lado a lado, sem quebrar a produção.
 
-## Decisões em Aberto
-- **Manutenção do CSS Framework**: O projeto atual utiliza **Bootstrap**. Para minimizar o impacto visual e focar na migração lógica, o plano prevê manter o Bootstrap, a menos que seja decidido migrar para Tailwind CSS.
-- **Roteamento**: Avaliar entre manter o hash-router (`#/termos`) ou passar para history router normal do `react-router-dom`. Como o deploy é na Vercel, o history router funciona nativamente sem problemas.
+---
 
-## Arquitetura Proposta (Padrão de Mercado)
+## ✅ Sessão 1 — Concluído (24/09/2026)
 
-A estrutura de diretórios passará do clássico MVC (Model-View-Controller) no front-end para uma arquitetura orientada a componentes.
+### Infraestrutura & Configuração
+- [x] Criação da branch `feature/react-migration`
+- [x] Instalação de `react`, `react-dom`, `react-router-dom`
+- [x] Instalação e configuração do `@vitejs/plugin-react`
+- [x] Criação do `vite.config.js` com suporte a JSX
+- [x] Atualização do `index.html` para carregar `main.jsx` (a "Chave Geral")
 
-- **`src/components/`**: Peças de UI reutilizáveis (Botões, Modais, Cards). *(Substitui partes de `src/views/`)*
-- **`src/pages/`**: Componentes que representam telas inteiras (Home/Dashboard, Termos, Contato). *(Substitui o roteamento manual do `main.js`)*
-- **`src/hooks/`**: Onde a lógica de negócio e controle de estado residirá. *(Substitui o `src/controllers/asset-controller.js`)*
-- **`src/context/`**: Gerenciamento de estados globais, como a sessão do usuário logado e os dados da carteira.
-- **`src/services/` & `src/infrastructure/`**: Serão mantidos **sem alterações** ou com mínimas alterações. A lógica do Supabase e as chamadas de API são puras e totalmente reaproveitáveis no React.
+### Camada de Autenticação
+- [x] `src/context/AuthContext.jsx` — Provider global com `session`, `user`, `isAuthenticated`, `signInWithGoogle` (com `prompt: 'select_account'`), `signOut`
 
-## Proposed Changes
+### Camada de Lógica (Hooks)
+- [x] `src/hooks/useAssets.js` — Custom Hook com:
+  - Dados demo para modo visitante (Guest Mode)
+  - Fetch real de ativos do Supabase
+  - Carregamento do perfil do usuário (sort, broker, notificações)
+  - SWR: revalidação de preços em background
+  - `handleSortChange` — ordena e persiste no banco
+  - `handleBrokerChange` — troca corretora e persiste no banco
+  - `handleToggleNotif` — ativa/desativa e persiste no banco
+  - Função `sortAssets` portada do `AssetController`
 
-Abaixo estão as etapas de execução propostas.
+### Componentes de UI
+- [x] `src/components/Header.jsx` — Logo, sort select, broker select colorido, sino com **balão popover mobile**, menu do usuário com avatar e fallback, botão "Entrar"
+- [x] `src/components/Footer.jsx` — Texto SEO + links de navegação React (`<Link>`) para Termos, Privacidade e Contato
+- [x] `src/components/LoginModal.jsx` — Modal Bootstrap controlado por React (`useRef`), abre automaticamente para visitantes via `useEffect`
+- [x] `src/components/PortfolioSummary.jsx` — Painel consolidado com Patrimônio, Variação Global, DY Anual, DY Mensal, grid de tickers com popovers
+- [x] `src/components/AssetCard.jsx` — Card de ativo com bordas coloridas por variação PM/Dia, P.M., Preço Atual, Total, link Play Store da corretora
 
-### 1. Inicialização e Dependências
+### Páginas
+- [x] `src/pages/Dashboard.jsx` — Orquestra Header + PortfolioSummary + AssetCard com skeleton loading
+- [x] `src/pages/Termos.jsx` — Conteúdo real migrado + botão Voltar com `useNavigate`
+- [x] `src/pages/Privacidade.jsx` — Conteúdo real migrado + botão Voltar com `useNavigate`
+- [x] `src/pages/Contato.jsx` — Formulário Formspree com e-mail pré-preenchido e bloqueado para usuários logados
 
-Configurar o ambiente Vite para React e instalar dependências essenciais.
+### Roteamento & App Shell
+- [x] `src/App.jsx` — `BrowserRouter` + `Routes` + `AuthProvider` + efeito global de fechar `<details>` ao clicar fora
+- [x] `src/main.jsx` — Ponto de entrada do React
 
-#### `package.json` (Atualização)
-- Adição de `react`, `react-dom`, `react-router-dom` (Roteamento).
-- Adição dos plugins do Vite para React.
+### Documentação
+- [x] `docs/REACT_MIGRATION_PLAN.md` — Este arquivo
+- [x] `README.md` — Badge de migração + stack React na seção de tecnologias + destaque de Migração Arquitetural na seção para recrutadores
 
-### 2. Configuração Base (Context & Routing)
+---
 
-#### `src/context/AuthContext.jsx`
-- Criaremos um Provider para injetar a sessão do Supabase (`session`, `user`) por toda a aplicação. Isso evita passar os dados do usuário componente por componente.
+## 🔲 Sessão 2 — CRUD de Ativos (Próxima Semana)
 
-#### `src/App.jsx` e `src/main.jsx`
-- O `App.jsx` conterá a definição das rotas (`/`, `/termos`, `/privacidade`, `/contato`) utilizando `react-router-dom`.
-- O `main.js` atual será substituído pelo `main.jsx` do React.
+### Componentes a Criar
+- [ ] `src/components/AddAssetDrawer.jsx` — Gaveta inferior "+ NOVO ATIVO" com formulário controlado
+  - Validação de ticker na B3 (via `AssetService.validateTicker`)
+  - Busca de preço atual ao digitar o ticker
+  - Simulador da Bola de Neve inline
+  - Autocomplete de tickers
+- [ ] `src/components/UpdateAssetModal.jsx` — Modal de edição de quantidade e preço médio
+  - Botões quick +/- de quantidade e preço
+  - Formulário controlado com `useState`
+- [ ] Botões de ação no `AssetCard.jsx`:
+  - ✏️ Botão Editar (abre `UpdateAssetModal`)
+  - 🗑️ Botão Excluir com alerta de DARF para FIIs com lucro (SweetAlert2)
+  - 🔄 Botão "Tentar novamente" para ativos com erro de cotação
 
-### 3. Migração de Lógica (Controllers -> Hooks/Services)
+### Lógica a Migrar do AssetController
+- [ ] `onCreateSubmit` → criar ativo (com validação + feedback Swal)
+- [ ] `onUpdateSubmit` → editar ativo
+- [ ] `onDeleteAsset` → excluir com alerta condicional DARF
+- [ ] `onRetrySingleAsset` → revalidar preço de um ativo individualmente
+- [ ] `onFetchCurrentPrice` → buscar preço atual no form de novo ativo
 
-#### `src/hooks/useAssets.js`
-- Toda a lógica pesada que hoje está no `asset-controller.js` (como buscar, adicionar, editar e excluir ativos, e calcular o PM e variações) será transformada em um Custom Hook do React.
-- Esse Hook utilizará o `useState` para guardar a lista de ativos e `useEffect` para buscá-los ao carregar.
+---
 
-### 4. Migração Visual (Views -> Componentes/Páginas)
+## 🔲 Sessão 3 — Polimento & Funcionalidades Avançadas
 
-Transformar os templates string do JS em componentes JSX (React).
+### Componentes Pendentes
+- [ ] `src/components/AssetCard.jsx` — Completar seção de Dividendos:
+  - Box de Renda Mensal e Renda Anual
+  - Cotas compradas por mês/ano
+  - Grid de meses pagos (12 meses rolantes coloridos)
+  - Popover de DY Info (tooltip informativo)
+  - Mensagem da Bola de Neve
+- [ ] `src/components/PromptView.jsx` — Gerador de Smart Prompt para IA
 
-#### `src/pages/Dashboard.jsx` (antigo `portfolio-view.js` + parte do `main.js`)
-- A tela principal. Mostrará os componentes de Summary, Header e a Lista de Cards.
+### UX & Detalhes
+- [ ] Animação `bell-animating` no sino ao toglar notificações
+- [ ] Feedback toast (Swal) ao ativar/desativar notificações
+- [ ] Swal de loading/sucesso/erro nas operações de CRUD
+- [ ] Ordenação e corretora atualizando o select sem recarregar
 
-#### Componentes Reutilizáveis
-- `src/components/AssetCard.jsx` (migrado de `asset-card-view.js`)
-- `src/components/PortfolioSummary.jsx` (migrado de `portfolio-summary-view.js`)
-- `src/components/AddAssetModal.jsx` (migrado de `add-asset-view.js`)
-- `src/components/LoginModal.jsx` (migrado de `login-view.js`)
-- `src/components/Footer.jsx` (migrado de `footer-view.js`)
+---
 
-#### Páginas Institucionais
-- `src/pages/Termos.jsx`
-- `src/pages/Privacidade.jsx`
-- `src/pages/Contato.jsx`
+## 🔲 Sessão 4 — Limpeza Final & Merge
 
-## Estratégia de Migração (GitHub + Vercel)
+### Remoção de Arquivos Legados
+- [ ] `src/main.js` — Substituído por `src/main.jsx`
+- [ ] `src/controllers/asset-controller.js` — Substituído por `src/hooks/useAssets.js`
+- [ ] `src/views/` (pasta inteira) — Substituída por `src/components/` e `src/pages/`
+- [ ] Remover `src/models/` se não houver mais dependências diretas
 
-Como o projeto já está integrado à Vercel (conforme visto pela pasta `.vercel` e arquivo `vercel.json`), a melhor forma de realizar essa migração no mundo real sem quebrar o sistema atual em produção é:
+### Deploy & Validação Final
+- [ ] Testar Preview Deploy na Vercel (URL temporária da branch)
+- [ ] Validar Auth Google em produção (OAuth redirect)
+- [ ] Validar CRUD completo no ambiente de Preview
+- [ ] Merge da `feature/react-migration` → `main`
+- [ ] Deploy em produção sem downtime
 
-1. **Nova Branch**: Criar uma branch dedicada para a migração (ex: `feature/react-migration`).
-2. **Desenvolvimento Isolado**: Executar todas as alterações do React (instalação de pacotes, reestruturação de pastas, reescrita de código) nesta nova branch localmente.
-3. **Preview Deploy (Vercel)**: Ao fazer *push* dessa branch para o GitHub, a Vercel automaticamente detectará o push e criará um **Preview Environment**. Isso gerará uma URL temporária onde poderemos testar a aplicação rodando em React perfeitamente na nuvem, sem afetar o site principal que os usuários estão usando.
-4. **Validação**: Testar extensivamente a URL de Preview (Auth, CRUD, Responsividade).
-5. **Merge e Deploy em Produção**: Uma vez validado, faremos um Pull Request (ou merge direto) da branch `feature/react-migration` para a `main`. A Vercel então fará o build da versão React e a substituirá pela antiga em produção sem downtime (tempo de inatividade).
+---
 
-> A Vercel é extremamente otimizada para React e Vite. Ela detectará automaticamente o uso do Vite e ajustará os comandos de build (`npm run build`) e o diretório de saída (`dist`) sem precisarmos configurar muita coisa extra.
+## Decisões Técnicas Registradas
+
+| Decisão | Escolha | Motivo |
+|---|---|---|
+| CSS Framework | Bootstrap (mantido) | Reaproveitar visual existente; foco na lógica React |
+| Roteamento | History API (`BrowserRouter`) | URLs limpas; Vercel suporta nativamente |
+| Estado Global | Context API | Supabase Auth é simples o suficiente; sem necessidade de Redux |
+| Fetch/Cache | SWR manual no hook | Padrão já existia no Vanilla; portado de forma limpa |
+| Formulário de Contato | Formspree (mantido) | Funciona sem back-end adicional |

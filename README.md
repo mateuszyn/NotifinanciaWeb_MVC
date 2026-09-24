@@ -4,13 +4,16 @@
 
 O **Notifinancia** é uma plataforma web completa desenvolvida para o acompanhamento estratégico de ações e Fundos Imobiliários (FIIs) da B3. Inspirado na metodologia Barsi de investimento focado em dividendos, o sistema oferece cotações em tempo real, cálculos automáticos de preço médio, alertas de variação e relatórios diários automatizados direto no e-mail do usuário.
 
+> 🚧 **Em migração arquitetural:** A branch `feature/react-migration` contém a reescrita completa do front-end em **React + Vite**. Veja o progresso detalhado em [`docs/REACT_MIGRATION_PLAN.md`](docs/REACT_MIGRATION_PLAN.md).
+
 ---
 
 ## 💡 Destaques Técnicos (Visão para Recrutadores)
 
 Este projeto foi construído com foco em **performance, resiliência e UX**, resolvendo desafios reais de engenharia de software:
 
-*   **Arquitetura Serverless Híbrida:** Integração fluida entre um Front-end MVC e um Back-end robusto em Python utilizando as *Serverless Functions* da Vercel. Isso eliminou problemas de CORS e reduziu o tempo de resposta das APIs para milissegundos.
+*   **Migração Arquitetural Planejada (React):** O projeto está sendo portado de uma arquitetura MVC Vanilla JS para React, adotando Custom Hooks, Context API e componentização orientada a mercado. A estratégia de migração incremental (*Strangler Fig*) garante que a versão de produção nunca ficou fora do ar durante o processo.
+*   **Arquitetura Serverless Híbrida:** Integração fluida entre um Front-end e um Back-end robusto em Python utilizando as *Serverless Functions* da Vercel. Isso eliminou problemas de CORS e reduziu o tempo de resposta das APIs para milissegundos.
 *   **Resiliência no Web Scraping:** Implementação de mecanismos de *fallback* e cálculos matemáticos "na raça" no Back-end (Python/yfinance) para contornar bloqueios de IP ao buscar o *Dividend Yield* em ambientes de nuvem.
 *   **Integração com IA (Prompt Engineering):** O sistema não apenas exibe dados, mas conta com um motor gerador de *Smart Prompts*. Ele compila os dados da carteira do usuário (ativos, preço médio, variação diária, quantidade) e gera um prompt otimizado para o Google Gemini retornar análises táticas de aporte e leitura de cenário.
 *   **CRON Jobs e Mensageria:** Utilização de *Edge Functions* (Deno/Supabase) para varrer o banco de dados de usuários, compilar o fechamento de mercado e disparar relatórios transacionais via Resend API.
@@ -19,10 +22,16 @@ Este projeto foi construído com foco em **performance, resiliência e UX**, res
 
 ## 🛠️ Tecnologias Utilizadas
 
-**Front-end:**
+**Front-end (branch `main` — estável):**
 *   HTML5, CSS3 (Bootstrap 5) & JavaScript (ES6+)
-*   Arquitetura MVC (Model-View-Controller) local
+*   Arquitetura MVC (Model-View-Controller)
 *   Vite (Build Tool)
+
+**Front-end (branch `feature/react-migration` — em andamento):**
+*   **React 19** + Vite
+*   **React Router DOM** (rotas com History API)
+*   **Context API** (gerenciamento de sessão global)
+*   **Custom Hooks** (`useAssets`) para lógica de negócio
 
 **Back-end & API:**
 *   Python 3 & FastAPI
@@ -31,7 +40,7 @@ Este projeto foi construído com foco em **performance, resiliência e UX**, res
 
 **Banco de Dados, Autenticação & Automação:**
 *   Supabase (PostgreSQL)
-*   Supabase Auth (Magic Links / OAuth)
+*   Supabase Auth (OAuth Google)
 *   Supabase Edge Functions (Deno)
 *   Resend API (Disparo de E-mails)
 
