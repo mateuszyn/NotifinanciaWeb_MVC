@@ -1,7 +1,7 @@
 import React from 'react';
 import { BROKERS } from '../utils/brokers.js';
 
-export default function AssetCard({ asset, broker, isGuest }) {
+export default function AssetCard({ asset, broker, isGuest, onEdit, onDelete, onRetry }) {
     const profitPct = asset.variacaoPm || 0;
     const dailyChange = asset.dailyChange || 0;
     const profitTextClass = profitPct >= 0 ? 'text-profit-pos' : 'text-profit-neg';
@@ -25,7 +25,20 @@ export default function AssetCard({ asset, broker, isGuest }) {
             <div className={`asset-card ${borderClass}`}>
                 <div className="d-flex justify-content-between align-items-center mb-3">
                     <h4 className="m-0 fw-bold">{ticker}</h4>
-                    {/* Botões de Ação Aqui */}
+                    <div className="d-flex gap-3 align-items-center">
+                        {isGuest ? (
+                            <span className="badge bg-secondary">Dados de Exemplo</span>
+                        ) : (
+                            <span className="d-flex align-items-center gap-2">
+                                <button className="btn btn-link p-0 btn-edit edit-btn-wrapper" onClick={() => onEdit(asset)} aria-label="Editar / Aporte">
+                                    <span className="edit-icon"><i className="bi bi-pencil text-primary fs-4"></i></span>
+                                </button>
+                                <button className="btn btn-link p-0 text-danger btn-delete" onClick={() => onDelete(asset)}>
+                                    <i className="bi bi-trash3 text-danger trash-icon fs-4"></i>
+                                </button>
+                            </span>
+                        )}
+                    </div>
                 </div>
                 
                 <div className="row mb-3">

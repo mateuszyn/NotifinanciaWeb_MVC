@@ -151,7 +151,14 @@ export const AssetService = {
             const normalizedTicker = searchTicker;
             const rawTicker = ticker.toUpperCase().replace(/\.SA$/, '');
             
-            const res = data.results?.[normalizedTicker] || data.results?.[rawTicker];
+            const apiResults = data.results || {};
+            let res;
+
+            if (Array.isArray(apiResults)) {
+                res = apiResults.find(i => i.symbol === normalizedTicker || i.symbol === rawTicker) || {};
+            } else {
+                res = apiResults[normalizedTicker] || apiResults[rawTicker] || {};
+            }
             
             return {
                 price: Number(res?.price || res?.regularMarketPrice || 0),

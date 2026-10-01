@@ -123,6 +123,69 @@ export function useAssets() {
         }
     };
 
+    // --- FUNÇÕES DE CRUD ---
+
+    const addAsset = async (assetData) => {
+        if (!isAuthenticated) return;
+        await AssetService.addAsset(assetData);
+        // Após adicionar no banco, refazemos o fetch completo
+        const updatedAssets = await AssetService.getAssets();
+        setRawAssets(updatedAssets || []);
+        // E engatilhamos o SWR local para esse ativo para não ficar com preço zerado na tela
+        refreshSingleAsset(assetData.ticker);
+    };
+
+    const updateAsset = async (id, data) => {
+        if (!isAuthenticated) return;
+        await AssetService.updateAsset(id, data);
+        // Atualização otimista no estado local
+        setRawAssets(prev => prev.map(a => {
+            if (a.id == id) {
+                a.quantity = data.quantity;
+                a.averagePrice = data.averagePrice;
+                // Re-calcula propriedades enriquecidas (baseado no preço atual) usando o método enrich dele próprio
+                // Hack rápido para forçar o recálculo do PM:
+                a.variacaoPm = ((a.currentPrice - a.averagePrice) / a.averagePrice) * 100;
+            }
+            return a;
+        }));
+    };
+
+    const deleteAsset = async (id) => {
+        if (!isAuthenticated) return;
+        await AssetService.deleteAsset(id);
+        // Remove localmente
+        setRawAssets(prev => prev.filter(a => a.id != id));
+    };
+
+    const refreshSingleAsset = async (ticker) => {
+        if (!isAuthenticated) return;
+        try {
+            const data = await AssetService.getMarketPrices([ticker]);
+            const apiResults = data.results || [];
+            let marketData = Array.isArray(apiResults)
+                ? apiResults.find(i => i.symbol.toUpperCase() === ticker.toUpperCase() || i.symbol.toUpperCase() === `${ticker.toUpperCase()}.SA`) || {}
+                : apiResults[ticker.toUpperCase()] || apiResults[`${ticker.toUpperCase()}.SA`] || {};
+                
+            setRawAssets(prev => {
+                const updated = [...prev];
+                const index = updated.findIndex(a => a.ticker.toUpperCase() === ticker.toUpperCase());
+                if (index !== -1) {
+                    updated[index].enrich(marketData);
+                    updated[index].dataError = false; // reseta erro se houver
+                }
+                return updated;
+            });
+        } catch (error) {
+            setRawAssets(prev => {
+                const updated = [...prev];
+                const index = updated.findIndex(a => a.ticker.toUpperCase() === ticker.toUpperCase());
+                if (index !== -1) updated[index].dataError = true;
+                return updated;
+            });
+        }
+    };
+
     // Ativos já ordenados para renderização
     const assets = sortAssets(rawAssets, sortBy);
 
@@ -137,5 +200,9 @@ export function useAssets() {
         onSortChange: handleSortChange,
         onBrokerChange: handleBrokerChange,
         onToggleNotif: handleToggleNotif,
+        addAsset,
+        updateAsset,
+        deleteAsset,
+        refreshSingleAsset
     };
 }

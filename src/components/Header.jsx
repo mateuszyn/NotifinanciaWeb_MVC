@@ -181,7 +181,7 @@ export default function Header({ sortBy, onSortChange, broker, onBrokerChange, n
                                     className="user-menu-item"
                                     onClick={signInWithGoogle}
                                 >
-                                    <i className="bi bi-person-plus"></i> Adicionar conta
+                                    <i className="bi bi-person-lines-fill"></i> Trocar conta
                                 </button>
                                 <button
                                     type="button"
